@@ -1,0 +1,213 @@
+{
+  "name": "dotcommand",
+  "displayName": "DotCommand - Command Manager",
+  "publisher": "freerave",
+  "description": "Save, view, copy, and manage your frequently used commands in VS Code",
+  "version": "1.0.0",
+  "icon": "assets/icons/icon.png",
+  "keywords": [
+    "commands",
+    "command manager",
+    "terminal",
+    "productivity",
+    "snippets",
+    "workflow",
+    "automation",
+    "tools",
+    "development",
+    "cli"
+  ],
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:dotcommand.saveCommand",
+    "onCommand:dotcommand.viewCommands"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "type": "object",
+      "title": "DotCommand",
+      "properties": {
+        "dotcommand.autoSave.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable automatic saving of terminal commands"
+        },
+        "dotcommand.autoSave.minLength": {
+          "type": "number",
+          "default": 2,
+          "minimum": 1,
+          "maximum": 100,
+          "description": "Minimum command length to auto-save (characters)"
+        },
+        "dotcommand.autoSave.showNotifications": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show notifications when commands are auto-saved"
+        },
+        "dotcommand.general.maxCommands": {
+          "type": "number",
+          "default": 1000,
+          "minimum": 100,
+          "maximum": 10000,
+          "description": "Maximum number of commands to store"
+        },
+        "dotcommand.mostUsedThreshold": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 50,
+          "description": "Number of uses before a command is promoted to 'Most Used' category"
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "dotcommand",
+          "title": "DotCommand",
+          "icon": "assets/icons/icon.png"
+        }
+      ]
+    },
+    "views": {
+      "dotcommand": [
+        {
+          "id": "dotcommand.commandsView",
+          "name": "Saved Commands",
+          "icon": "$(terminal)",
+          "contextualTitle": "DotCommand"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "dotcommand.saveCommand",
+        "title": "Save Command",
+        "icon": "$(add)"
+      },
+      {
+        "command": "dotcommand.viewCommands",
+        "title": "View Commands",
+        "icon": "$(list-unordered)"
+      },
+      {
+        "command": "dotcommand.refreshCommands",
+        "title": "Refresh Commands",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "dotcommand.copyCommandFromTree",
+        "title": "Copy Command",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "dotcommand.deleteCommandFromTree",
+        "title": "Delete Command",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "dotcommand.importTerminalHistory",
+        "title": "Import Terminal History",
+        "icon": "$(archive)"
+      },
+      {
+        "command": "dotcommand.runCommandFromTree",
+        "title": "Run Command",
+        "icon": "$(play)"
+      },
+      {
+        "command": "dotcommand.toggleFavorite",
+        "title": "Toggle Favorite",
+        "icon": "$(star)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "dotcommand.saveCommand",
+        "key": "ctrl+shift+s",
+        "mac": "cmd+shift+s",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "dotcommand.viewCommands",
+        "key": "ctrl+shift+v",
+        "mac": "cmd+shift+v"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "dotcommand.saveCommand",
+          "when": "editorTextFocus",
+          "group": "navigation"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "dotcommand.saveCommand",
+          "when": "view == dotcommand.commandsView",
+          "group": "navigation"
+        },
+        {
+          "command": "dotcommand.refreshCommands",
+          "when": "view == dotcommand.commandsView",
+          "group": "navigation"
+        },
+        {
+          "command": "dotcommand.importTerminalHistory",
+          "when": "view == dotcommand.commandsView",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "dotcommand.runCommandFromTree",
+          "when": "view == dotcommand.commandsView && viewItem == commandItem",
+          "group": "inline@1"
+        },
+        {
+          "command": "dotcommand.toggleFavorite",
+          "when": "view == dotcommand.commandsView && viewItem == commandItem",
+          "group": "7_modification@1"
+        },
+        {
+          "command": "dotcommand.copyCommandFromTree",
+          "when": "view == dotcommand.commandsView && viewItem == commandItem",
+          "group": "7_modification@2"
+        },
+        {
+          "command": "dotcommand.deleteCommandFromTree",
+          "when": "view == dotcommand.commandsView && viewItem == commandItem",
+          "group": "7_modification@3"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0",
+    "@types/node": "16.x",
+    "eslint": "^8.0.0",
+    "typescript": "^4.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kareem2099/dotcommand"
+  },
+  "bugs": {
+    "url": "https://github.com/kareem2099/dotcommand/issues"
+  },
+  "homepage": "https://github.com/kareem2099/dotcommand#readme"
+}

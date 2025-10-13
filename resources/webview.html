@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saved Commands</title>
+    <style id="webview-styles"></style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Saved Commands (<span id="command-count">0</span>)</h1>
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="Search commands..." onkeyup="searchCommands()">
+            </div>
+        </div>
+
+        <div class="commands-container" id="commandsContainer">
+            <div class="no-commands">Loading commands...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { WebviewManager } from './webview.js';
+        const manager = new WebviewManager();
+        manager.initialize();
+    </script>
+</body>
+</html>
