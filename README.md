@@ -6,6 +6,12 @@ A powerful VS Code extension that learns your terminal habits, intelligently org
 
 ## 🔥 Features
 
+### 🧠 **AI-Powered Command Intelligence** (v1.1.0)
+✅ **Prepared Commands System** - 42+ built-in interactive templates with dynamic parameters
+✅ **File Extension Validation** - All file operations require proper extensions (.txt, .js, .html, etc.)
+✅ **Smart Parameter Prompts** - Intelligent input collection with validation
+✅ **Multiple Command Trees** - Separate "My Commands" and "Prepared Commands" interfaces
+
 ### 🏗️ **Smart Organization**
 ✅ **Auto-Categorization** - Commands automatically sorted into `git-workspace`, `npm-scripts`, `docker-build`, etc.
 ✅ **Recent & Most Used** - Commands promoted to special sections based on usage patterns
@@ -30,10 +36,153 @@ A powerful VS Code extension that learns your terminal habits, intelligently org
 ✅ **Status Indicators** - Emoji badges show favorites, auto-saved, etc.
 ✅ **Web View Support** - Rich interface for complex operations
 
+### 🎯 **Prepared Command Categories** (v1.1.0)
+
+#### 🚀 **Git Commands** (6 interactive)
+- Create & Switch Branch: `git checkout -b {branch}`
+- Commit with Custom Message: `git commit -m "{message}"`
+- Push to Branch: `git push origin {branch}`
+- Create Tag: `git tag -a {tag} -m "{message}"`
+
+#### 📦 **NPM Commands** (7 interactive)
+- Install Package: `npm install {package}`
+- Execute Custom Script: `npm run {script}`
+- Add DevDependency: `npm install --save-dev {package}`
+
+#### 🐳 **Docker Commands** (8 with validation)
+- Build Custom Image: `docker build -t {name} .`
+- Run on Custom Port: `docker run -p {port}:{port} {image}`
+- Execute Shell: `docker exec -it {container} sh`
+
+#### ☸️ **Kubernetes Commands** (6 interactive)
+- Get Pod Logs: `kubectl logs {pod}`
+- Scale Deployment: `kubectl scale deployment {deployment} --replicas={replicas}`
+- Apply Manifest: `kubectl apply -f {manifest}`
+
+#### 🐧 **Linux Commands** (10 with file validation)
+- **Copy File**: `cp {source} {destination}` *(requires .extension)*
+- **Move File**: `mv {source} {destination}` *(requires .extension)*
+- **View File**: `cat {file}` *(requires .extension)*
+- **Find Files**: `find {directory} -name "{pattern}"`
+- **Search Text**: `grep "{search}" {file}` *(requires .extension)*
+
 ## Keyboard Shortcuts
 
 - **Ctrl+Shift+S** (Windows/Linux) or **Cmd+Shift+S** (Mac) - Save a new command
 - **Ctrl+Shift+V** (Windows/Linux) or **Cmd+Shift+V** (Mac) - View and copy commands
+
+## VS Code Tasks Integration 🛠️
+
+DotCommand integrates seamlessly with VS Code's built-in task system, allowing you to run your commands directly from the **Task Runner** (Ctrl+Shift+P → "Tasks: Run Task").
+
+### Four Sources of Tasks
+
+1. **📂 `.vscode/tasks.json`** - Your standard build tasks (compile, watch)
+2. **💾 Saved Commands** - Your personal saved commands (favorites & most-used)
+3. **⚡ Built-in Prepared** - All 42+ built-in prepared commands
+4. **📋 `.vscode/tasks.json` (from templates)** - Auto-generated project workflows (NEW!)
+
+### 🎯 **Create New Task Template** (v1.1.0) - Auto-Generate Project Workflows
+
+DotCommand now provides **one-click task template generation** to bootstrap your project with complete task workflows!
+
+#### 🏗️ **How to Use**
+
+1. **Open "My Commands" sidebar** → click the **`Create New Task Template`** button (📋 icon)
+2. **Select project type** from 6 templates:
+   - **📦 NPM Project** - Node.js with npm scripts, build, test, lint workflows
+   - **🚀 Git Repository** - Version control commands, branching, tagging
+   - **🐳 Docker Container** - Container build, run, compose operations
+   - **🐍 Python Project** - Virtual environments, testing, formatting
+   - **⚛️ Frontend** - React/Vue/Angular development workflows
+   - **🛠️ Custom Project** - Generic development tasks (placeholders)
+
+3. **Template creates `.vscode/tasks.json`** with project-specific tasks
+4. **Tasks appear in VS Code** → **Ctrl+Shift+P** → **"Tasks: Run Task"**
+5. **Move tasks to personalize** → right-click any task → "Move to My Commands"
+
+#### 📊 **Multi-Template Support**
+
+When `.vscode/tasks.json` already exists, DotCommand offers smart merging:
+
+- **Add to existing tasks** → Combine new template with current tasks
+- **Replace all tasks** → Full replacement (backup recommended)
+- **Cancel** → Keep existing setup unchanged
+
+#### Example: NPM Project Template (11 tasks)
+```
+📦 NPM Tasks/
+├── Install Dependencies     npm install
+├── Start Development        npm run dev
+├── Start Production         npm run start
+├── Build Project           npm run build
+├── Run Tests              npm run test
+├── Run Tests Watch        npm run test:watch
+├── Run Linter             npm run lint
+├── Format Code            npm run format
+├── Clean Cache            npm run clean
+├── Audit Packages         npm audit
+└── Update Packages        npm update
+```
+
+#### 🌟 **Customization Workflow**
+1. **Generate template** → Get complete task suite instantly
+2. **Run tasks** → Test and verify functionality via VS Code Tasks panel
+3. **Customize** → Move tasks to "My Commands" for modification
+4. **Iterate** → Add more templates or adjust existing ones
+5. **Scale up** → Build comprehensive multi-project workflows
+
+### Using tasks.dotcommand
+
+Create a `tasks.dotcommand` file in your project root for custom project tasks:
+
+```json
+{
+  "version": "1.0.0",
+  "preparedTasks": [
+    {
+      "label": "🚀 Deploy to Production",
+      "command": "npm run build && npm run test && git tag v${input:version} && git push origin v${input:version}",
+      "description": "Full production deployment workflow",
+      "category": "Deployment",
+      "parameters": [
+        {
+          "name": "version",
+          "description": "Version to deploy (e.g., 1.2.3)",
+          "defaultValue": "1.0.0",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "label": "🐳 Start Development Stack",
+      "command": "docker-compose -f docker-compose.dev.yml up -d",
+      "description": "Start full development environment",
+      "category": "Development"
+    }
+  ]
+}
+```
+
+### Running Tasks
+
+1. Press **Ctrl+Shift+P** and select **"Tasks: Run Task"**
+2. Choose from your tasks organized by category:
+   - **Git Commands** - Branch operations, commits, tags
+   - **NPM Commands** - Package management, scripts
+   - **Docker Commands** - Container operations
+   - **Saved Commands** - Your personal favorites
+   - **Project Tasks** - Custom tasks from `tasks.dotcommand`
+
+### Task Categories & Organization
+
+Tasks are automatically categorized and appear in VS Code's task picker:
+- 🔄 **Build Group** - Git and NPM tasks
+- ⚡ **Other Group** - Docker, Kubernetes, Linux commands
+- ⭐ **Favorites** - Your starred saved commands
+- 📂 **Project** - Custom tasks from `tasks.dotcommand`
+
+Tasks refresh automatically when you update `tasks.dotcommand` or modify your saved commands.
 
 ## Usage
 

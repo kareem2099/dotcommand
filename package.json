@@ -3,7 +3,7 @@
   "displayName": "DotCommand - Command Manager",
   "publisher": "freerave",
   "description": "Save, view, copy, and manage your frequently used commands in VS Code",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "icon": "assets/icons/icon.png",
   "keywords": [
     "commands",
@@ -79,9 +79,15 @@
       "dotcommand": [
         {
           "id": "dotcommand.commandsView",
-          "name": "Saved Commands",
+          "name": "My Commands",
           "icon": "$(terminal)",
-          "contextualTitle": "DotCommand"
+          "contextualTitle": "Personal Commands"
+        },
+                {
+          "id": "dotcommand.preparedView",
+          "name": "Prepared Commands",
+          "icon": "$(lightbulb-autofix)",
+          "contextualTitle": "Prepared Commands"
         }
       ]
     },
@@ -125,6 +131,26 @@
         "command": "dotcommand.toggleFavorite",
         "title": "Toggle Favorite",
         "icon": "$(star)"
+      },
+      {
+        "command": "dotcommand.runPreparedCommand",
+        "title": "Run Prepared Command",
+        "icon": "$(play)"
+      },
+      {
+        "command": "dotcommand.addToMyCommands",
+        "title": "Add to My Commands",
+        "icon": "$(add)"
+      },
+      {
+        "command": "dotcommand.moveToMyCommands",
+        "title": "Move to My Commands",
+        "icon": "$(arrow-right)"
+      },
+      {
+        "command": "dotcommand.createNewTaskTemplate",
+        "title": "Create New Task Template",
+        "icon": "$(new-file)"
       }
     ],
     "keybindings": [
@@ -163,6 +189,11 @@
           "command": "dotcommand.importTerminalHistory",
           "when": "view == dotcommand.commandsView",
           "group": "navigation"
+        },
+        {
+          "command": "dotcommand.createNewTaskTemplate",
+          "when": "view == dotcommand.commandsView",
+          "group": "navigation"
         }
       ],
       "view/item/context": [
@@ -185,6 +216,21 @@
           "command": "dotcommand.deleteCommandFromTree",
           "when": "view == dotcommand.commandsView && viewItem == commandItem",
           "group": "7_modification@3"
+        },
+        {
+          "command": "dotcommand.runPreparedCommand",
+          "when": "view == dotcommand.preparedView && viewItem == preparedCommandItem",
+          "group": "inline@1"
+        },
+        {
+          "command": "dotcommand.addToMyCommands",
+          "when": "view == dotcommand.preparedView && viewItem == preparedCommandItem",
+          "group": "7_modification@1"
+        },
+        {
+          "command": "dotcommand.moveToMyCommands",
+          "when": "view == dotcommand.preparedView && viewItem == userPreparedTaskItem",
+          "group": "7_modification@2"
         }
       ]
     }
@@ -192,6 +238,7 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
+    "postcompile": "node scripts/generate-default-tasks.js",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts"

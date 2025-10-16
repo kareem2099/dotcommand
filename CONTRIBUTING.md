@@ -84,6 +84,19 @@ describe('CommandDetection', () => {
     expect(detectCategory('git status')).toBe('git-workspace');
   });
 });
+
+// New tests for prepared commands (v1.1.0)
+describe('PreparedCommands', () => {
+  it('should validate file extensions', () => {
+    const isValid = validateExtension('file.js');
+    expect(isValid).toBe(true);
+  });
+
+  it('should reject files without extensions', () => {
+    const isValid = validateExtension('filename');
+    expect(isValid).toBe(false);
+  });
+});
 ```
 
 #### **👥 User Testing**
@@ -91,6 +104,9 @@ describe('CommandDetection', () => {
 2. **Use context menus** for all operations
 3. **Test trash/recovery** workflows
 4. **Validate auto-organization**
+5. **🆕 Test prepared commands** - Try file operations, ensure extension validation works
+6. **🆕 Test parameter prompts** - Verify defaults, validation, and error messages
+7. **🆕 Test multiple trees** - Switch between "My Commands" and "Prepared Commands"
 
 ## 🎯 **Current Priorities**
 

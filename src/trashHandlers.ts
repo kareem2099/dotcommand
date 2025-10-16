@@ -111,15 +111,29 @@ async function emptyExpiredTrash(): Promise<void> {
  * Handle restoring a command from tree view context menu
  */
 export async function handleRestoreCommandFromTrash(item: any): Promise<void> {
-  // This would be called from context menu on trash items
+  // Extract the actual command ID from prefixed ID (e.g., "trash_123" -> "123")
+  let commandId = item.id;
+  if (item.id.startsWith('trash_')) {
+    commandId = item.id.substring(6); // Remove 'trash_' prefix
+  }
+
+  // Get the command to display its name
+  const command = treeDataProvider.getCommandById(commandId) ||
+                   storage.getDeletedCommands().find(cmd => cmd.id === commandId);
+
+  if (!command) {
+    window.showErrorMessage('Command not found in trash.');
+    return;
+  }
+
   const confirm = await window.showInformationMessage(
-    'Restore this command from trash?',
+    `Restore command: "${command.name || command.command}" from trash?`,
     'Restore',
     'Cancel'
   );
 
   if (confirm === 'Restore') {
-    const success = await storage.restoreCommand(item.id);
+    const success = await storage.restoreCommand(commandId);
     if (success) {
       treeDataProvider.refresh();
       window.showInformationMessage('Command restored from trash.');
