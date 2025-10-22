@@ -7,6 +7,8 @@ import { initializeTrashHandlers, handleViewTrash } from './trashHandlers';
 import { handleViewCommands } from './viewHandlers';
 import { handleRunPreparedCommand } from './commandHandlers';
 import { registerTaskProvider } from './taskProvider';
+import { getPreparedCommandCategories, getPreparedCommandsForCategory } from './preparedCommands';
+import { TaskManagerWebview } from './taskManagerWebview';
 
 /**
  * Tree data provider for prepared (built-in) commands
@@ -29,49 +31,16 @@ class PreparedCommandsTreeDataProvider implements TreeDataProvider<TreeItem> {
       // Root level - show prepared command categories
       const items: TreeItem[] = [];
 
-      // Git Commands Category
-      const gitItem = new TreeItem('🚀 Git Commands', TreeItemCollapsibleState.Collapsed);
-      gitItem.iconPath = new ThemeIcon('git-branch');
-      gitItem.contextValue = 'preparedCategory';
-      gitItem.tooltip = 'Essential Git commands for version control';
-      items.push(gitItem);
+      // Get all categories from the PREPARED_COMMANDS
+      const categories = getPreparedCommandCategories();
 
-      // NPM Commands Category
-      const npmItem = new TreeItem('📦 NPM Commands', TreeItemCollapsibleState.Collapsed);
-      npmItem.iconPath = new ThemeIcon('package');
-      npmItem.contextValue = 'preparedCategory';
-      npmItem.tooltip = 'Common NPM package management commands with parameters';
-      items.push(npmItem);
+      // Create items for each category
+      categories.forEach(category => {
+        const categoryItem = this.createCategoryTreeItem(category);
+        items.push(categoryItem);
+      });
 
-      // NPM Tasks Category (from tasks.dotcommand - our expanded basic tasks) - always show
-      const npmTasksItem = new TreeItem('📋 NPM Tasks', TreeItemCollapsibleState.Collapsed);
-      npmTasksItem.iconPath = new ThemeIcon('tools');
-      npmTasksItem.contextValue = 'preparedCategory';
-      npmTasksItem.tooltip = 'Basic NPM tasks from tasks.dotcommand file';
-      items.push(npmTasksItem);
-
-      // Docker Commands Category
-      const dockerItem = new TreeItem('🐳 Docker Commands', TreeItemCollapsibleState.Collapsed);
-      dockerItem.iconPath = new ThemeIcon('vm');
-      dockerItem.contextValue = 'preparedCategory';
-      dockerItem.tooltip = 'Common Docker container management commands';
-      items.push(dockerItem);
-
-      // Kubernetes Commands Category
-      const k8sItem = new TreeItem('☸️ Kubernetes Commands', TreeItemCollapsibleState.Collapsed);
-      k8sItem.iconPath = new ThemeIcon('server-process');
-      k8sItem.contextValue = 'preparedCategory';
-      k8sItem.tooltip = 'Essential Kubernetes cluster management commands';
-      items.push(k8sItem);
-
-      // Linux Commands Category
-      const linuxItem = new TreeItem('🐧 Linux Commands', TreeItemCollapsibleState.Collapsed);
-      linuxItem.iconPath = new ThemeIcon('terminal');
-      linuxItem.contextValue = 'preparedCategory';
-      linuxItem.tooltip = 'Essential Linux system commands';
-      items.push(linuxItem);
-
-      // My Prepared Tasks from tasks.dotcommand
+      // My Prepared Tasks from tasks.dotcommand - always show at the end
       const { readTasksDotCommand } = require('./taskProvider');
       const userTasks = await readTasksDotCommand();
       if (userTasks.length > 0) {
@@ -82,26 +51,20 @@ class PreparedCommandsTreeDataProvider implements TreeDataProvider<TreeItem> {
         items.push(tasksItem);
       }
 
-    return items;
+      return items;
     }
 
     // Handle expansion of prepared categories
     if (element.contextValue === 'preparedCategory') {
       const label = typeof element.label === 'string' ? element.label : element.label?.label;
-      if (label?.includes('Git Commands')) {
-        return this.getPreparedGitCommands();
-      } else if (label?.includes('NPM Commands')) {
-        return this.getPreparedNpmCommands();
-      } else if (label?.includes('NPM Tasks')) {
-        return this.getNpmTasks();
-      } else if (label?.includes('Docker Commands')) {
-        return this.getPreparedDockerCommands();
-      } else if (label?.includes('Kubernetes Commands')) {
-        return this.getPreparedK8sCommands();
-      } else if (label?.includes('Linux Commands')) {
-        return this.getPreparedLinuxCommands();
-      } else if (label?.includes('My Prepared Tasks')) {
+      // Extract category name from label (format: "emoji Category Name")
+      const categoryName = label?.split(' ').slice(1).join(' ').trim();
+
+      if (categoryName === 'My Prepared Tasks') {
         return this.getMyPreparedTasks();
+      } else {
+        // Handle dynamic categories from PREPARED_COMMANDS
+        return this.getDynamicCategoryCommands(categoryName || '');
       }
     }
 
@@ -217,6 +180,124 @@ class PreparedCommandsTreeDataProvider implements TreeDataProvider<TreeItem> {
     });
   }
 
+  /**
+   * Create a category tree item with appropriate icon and tooltip
+   */
+  private createCategoryTreeItem(categoryName: string): TreeItem {
+    const { icon, tooltip } = this.getCategoryDisplayInfo(categoryName);
+    const item = new TreeItem(icon + ' ' + categoryName, TreeItemCollapsibleState.Collapsed);
+    item.iconPath = this.getCategoryIcon(categoryName);
+    item.contextValue = 'preparedCategory';
+    item.tooltip = tooltip;
+    return item;
+  }
+
+  /**
+   * Get display information for a category
+   */
+  private getCategoryDisplayInfo(categoryName: string): { icon: string; tooltip: string } {
+    const categoryMap: { [key: string]: { icon: string; tooltip: string } } = {
+      'Git Commands': {
+        icon: '🚀',
+        tooltip: 'Essential Git commands for version control'
+      },
+      'Git Commands Advanced': {
+        icon: '🌟',
+        tooltip: 'Advanced Git commands for power users'
+      },
+      'NPM Commands': {
+        icon: '📦',
+        tooltip: 'Common NPM package management commands'
+      },
+      'Yarn Commands': {
+        icon: '🧶',
+        tooltip: 'Yarn package manager commands'
+      },
+      'Python Commands': {
+        icon: '🐍',
+        tooltip: 'Python development and management commands'
+      },
+      'Database Commands': {
+        icon: '🗃️',
+        tooltip: 'Database connection and management commands'
+      },
+      'Docker Commands': {
+        icon: '🐳',
+        tooltip: 'Docker container management commands'
+      },
+      'Kubernetes Commands': {
+        icon: '☸️',
+        tooltip: 'Kubernetes cluster management commands'
+      },
+      'Linux Commands': {
+        icon: '🐧',
+        tooltip: 'Essential Linux system commands'
+      },
+      'Code Quality Commands': {
+        icon: '✨',
+        tooltip: 'Code linting and formatting tools'
+      },
+      'Testing Commands': {
+        icon: '🧪',
+        tooltip: 'Testing frameworks and utilities'
+      },
+      'Deployment Commands': {
+        icon: '🚀',
+        tooltip: 'Application deployment commands'
+      }
+    };
+
+    return categoryMap[categoryName] || {
+      icon: '📁',
+      tooltip: `Commands for ${categoryName.toLowerCase()}`
+    };
+  }
+
+  /**
+   * Get VS Code ThemeIcon for a category
+   */
+  private getCategoryIcon(categoryName: string): ThemeIcon {
+    const iconMap: { [key: string]: ThemeIcon } = {
+      'Git Commands': new ThemeIcon('git-branch'),
+      'Git Commands Advanced': new ThemeIcon('git-commit'),
+      'NPM Commands': new ThemeIcon('package'),
+      'Yarn Commands': new ThemeIcon('extensions'),
+      'Python Commands': new ThemeIcon('snake'),
+      'Database Commands': new ThemeIcon('database'),
+      'Docker Commands': new ThemeIcon('vm'),
+      'Kubernetes Commands': new ThemeIcon('server-process'),
+      'Linux Commands': new ThemeIcon('terminal'),
+      'Code Quality Commands': new ThemeIcon('checklist'),
+      'Testing Commands': new ThemeIcon('beaker'),
+      'Deployment Commands': new ThemeIcon('cloud-upload')
+    };
+
+    return iconMap[categoryName] || new ThemeIcon('folder');
+  }
+
+  /**
+   * Get commands for any dynamic category from PREPARED_COMMANDS
+   */
+  private getDynamicCategoryCommands(categoryName: string): TreeItem[] {
+    const commands = getPreparedCommandsForCategory(categoryName);
+
+    return commands.map(cmd => {
+      const item = new TreeItem(cmd.name);
+      item.description = cmd.command;
+      item.tooltip = `${cmd.description}\n\nRight-click: Run this prepared command`;
+      item.iconPath = new ThemeIcon('star');
+      item.contextValue = 'preparedCommandItem';
+      item.id = `prepared_${cmd.name.replace(/[^a-zA-Z0-9]/g, '_')}_${cmd.command.replace(/[^a-zA-Z0-9]/g, '_')}`;
+
+      item.command = {
+        command: 'dotcommand.runPreparedCommand',
+        arguments: [cmd.command], // Pass the command template that will be looked up
+        title: 'Run Prepared Command'
+      };
+      return item;
+    });
+  }
+
   private createPreparedCommandItem(name: string, command: string, description: string): TreeItem {
     const item = new TreeItem(name);
     item.description = command;
@@ -327,9 +408,24 @@ export async function activate(context: ExtensionContext): Promise<void> {
     require('./commandHandlers').handleMoveToMyCommands
   );
 
+  const testCommandDisposable = commands.registerCommand(
+    'dotcommand.testCommand',
+    require('./commandHandlers').handleTestCommand
+  );
+
   const createNewTaskTemplateDisposable = commands.registerCommand(
     'dotcommand.createNewTaskTemplate',
     require('./commandHandlers').handleCreateNewTaskTemplate
+  );
+
+  const taskManagerDisposable = commands.registerCommand(
+    'dotcommand.taskManager',
+    () => TaskManagerWebview.getInstance().show()
+  );
+
+  const viewTrashDisposable = commands.registerCommand(
+    'dotcommand.viewTrash',
+    require('./trashHandlers').handleViewTrash
   );
 
   // Set up terminal monitoring
@@ -351,6 +447,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
   context.subscriptions.push(runPreparedCommandDisposable);
   context.subscriptions.push(addToMyCommandsDisposable);
   context.subscriptions.push(moveToMyCommandsDisposable);
+  context.subscriptions.push(testCommandDisposable);
   context.subscriptions.push(treeView);
   context.subscriptions.push(preparedTreeView);
 

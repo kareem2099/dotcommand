@@ -1,6 +1,7 @@
 import { TreeDataProvider, TreeItem, TreeItemCollapsibleState, Event, EventEmitter, ProviderResult, ThemeIcon, workspace, Command } from 'vscode';
 import { CommandStorage } from './storage';
 import { SavedCommand } from './types';
+import { getPreparedCommandCategories, getPreparedCommandsForCategory } from './preparedCommands';
 
 export class CommandsTreeDataProvider implements TreeDataProvider<TreeItem> {
   private _onDidChangeTreeData: EventEmitter<TreeItem | undefined | null | void> = new EventEmitter<TreeItem | undefined | null | void>();
@@ -136,27 +137,64 @@ export class CommandsTreeDataProvider implements TreeDataProvider<TreeItem> {
     if (!element) {
       // Root level - show prepared command categories
       const items: TreeItem[] = [];
+      const categories = getPreparedCommandCategories();
 
-      // Git Commands Category
-      const gitItem = new TreeItem('🚀 Git Commands', TreeItemCollapsibleState.Collapsed);
-      gitItem.iconPath = new ThemeIcon('git-branch');
-      gitItem.contextValue = 'preparedCategory';
-      gitItem.tooltip = 'Essential Git commands for version control';
-      items.push(gitItem);
+      // Create category icons mapping
+      const categoryIcons: { [key: string]: ThemeIcon } = {
+        'Git Commands': new ThemeIcon('git-branch'),
+        'NPM Commands': new ThemeIcon('package'),
+        'Yarn Commands': new ThemeIcon('package'),
+        'Python Commands': new ThemeIcon('code'),
+        'Docker Commands': new ThemeIcon('vm'),
+        'Kubernetes Commands': new ThemeIcon('server-process'),
+        'Linux Commands': new ThemeIcon('terminal'),
+        'Database Commands': new ThemeIcon('database'),
+        'Code Quality Commands': new ThemeIcon('checklist'),
+        'Testing Commands': new ThemeIcon('beaker'),
+        'Deployment Commands': new ThemeIcon('rocket')
+      };
 
-      // NPM Commands Category
-      const npmItem = new TreeItem('📦 NPM Commands', TreeItemCollapsibleState.Collapsed);
-      npmItem.iconPath = new ThemeIcon('package');
-      npmItem.contextValue = 'preparedCategory';
-      npmItem.tooltip = 'Common NPM package management commands';
-      items.push(npmItem);
+      // Create tooltips mapping
+      const categoryTooltips: { [key: string]: string } = {
+        'Git Commands': 'Essential Git commands for version control',
+        'NPM Commands': 'Common NPM package management commands',
+        'Yarn Commands': 'Yarn package manager commands',
+        'Python Commands': 'Python development and pip commands',
+        'Docker Commands': 'Docker container management commands',
+        'Kubernetes Commands': 'Kubernetes orchestration commands',
+        'Linux Commands': 'Essential Linux system commands',
+        'Database Commands': 'Database connection and management commands',
+        'Code Quality Commands': 'Linting and code formatting tools',
+        'Testing Commands': 'Testing framework commands',
+        'Deployment Commands': 'Deployment and hosting platform commands'
+      };
 
-      // Linux Commands Category
-      const linuxItem = new TreeItem('🐧 Linux Commands', TreeItemCollapsibleState.Collapsed);
-      linuxItem.iconPath = new ThemeIcon('terminal');
-      linuxItem.contextValue = 'preparedCategory';
-      linuxItem.tooltip = 'Essential Linux system commands';
-      items.push(linuxItem);
+      // Create emoji prefixes mapping
+      const categoryEmojis: { [key: string]: string } = {
+        'Git Commands': '🚀',
+        'NPM Commands': '📦',
+        'Yarn Commands': '🧶',
+        'Python Commands': '🐍',
+        'Docker Commands': '🐳',
+        'Kubernetes Commands': '☸️',
+        'Linux Commands': '🐧',
+        'Database Commands': '🗄️',
+        'Code Quality Commands': '✨',
+        'Testing Commands': '🧪',
+        'Deployment Commands': '🚀'
+      };
+
+      for (const category of categories) {
+        const commands = getPreparedCommandsForCategory(category);
+        if (commands.length > 0) {
+          const displayName = `${categoryEmojis[category] || '📁'} ${category}`;
+          const categoryItem = new TreeItem(displayName, TreeItemCollapsibleState.Collapsed);
+          categoryItem.iconPath = categoryIcons[category] || new ThemeIcon('folder');
+          categoryItem.contextValue = 'preparedCategory';
+          categoryItem.tooltip = categoryTooltips[category] || `${category} commands`;
+          items.push(categoryItem);
+        }
+      }
 
       return items;
     }
@@ -164,12 +202,11 @@ export class CommandsTreeDataProvider implements TreeDataProvider<TreeItem> {
     // Handle expansion of prepared categories
     if (element.contextValue === 'preparedCategory') {
       const label = typeof element.label === 'string' ? element.label : element.label?.label;
-      if (label?.includes('Git Commands')) {
-        return this.getPreparedGitCommands();
-      } else if (label?.includes('NPM Commands')) {
-        return this.getPreparedNpmCommands();
-      } else if (label?.includes('Linux Commands')) {
-        return this.getPreparedLinuxCommands();
+      if (label) {
+        // Extract category name from display label (remove emoji prefix)
+        const categoryMatch = label?.match(/^[^a-zA-Z]*(.+)$/);
+        const categoryName = categoryMatch ? categoryMatch[1].trim() : label;
+        return this.getPreparedCommandsForCategory(categoryName);
       }
     }
 
@@ -321,6 +358,39 @@ export class CommandsTreeDataProvider implements TreeDataProvider<TreeItem> {
     const commands = this.storage.getAllCommands();
     const categoryCommands = commands.filter(cmd => cmd.category === category);
     return categoryCommands.map(cmd => this.createCommandItem(cmd, category));
+  }
+
+  /**
+   * Get prepared commands for a specific category
+   */
+  private getPreparedCommandsForCategory(categoryName: string): TreeItem[] {
+    const preparedCommands = getPreparedCommandsForCategory(categoryName);
+    return preparedCommands.map(cmd => {
+      const item = new TreeItem(cmd.name);
+      item.description = cmd.command;
+      item.tooltip = `${cmd.description}\n\nRight-click: Run this prepared command`;
+      // Match context value to what command handlers expect
+      item.contextValue = 'preparedCommandItem';
+      item.id = `prepared_${cmd.command.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      item.command = {
+        command: 'dotcommand.runPreparedCommand',
+        arguments: [item],
+        title: 'Run Prepared Command'
+      };
+      // Set appropriate icon based on category
+      const cat = categoryName.toLowerCase();
+      if (cat.includes('git')) item.iconPath = new ThemeIcon('git-branch');
+      else if (cat.includes('npm') || cat.includes('yarn')) item.iconPath = new ThemeIcon('package');
+      else if (cat.includes('docker')) item.iconPath = new ThemeIcon('vm');
+      else if (cat.includes('python')) item.iconPath = new ThemeIcon('code');
+      else if (cat.includes('database')) item.iconPath = new ThemeIcon('database');
+      else if (cat.includes('test')) item.iconPath = new ThemeIcon('beaker');
+      else if (cat.includes('deploy')) item.iconPath = new ThemeIcon('rocket');
+      else if (cat.includes('linux')) item.iconPath = new ThemeIcon('terminal');
+      else item.iconPath = new ThemeIcon('terminal');
+
+      return item;
+    });
   }
 
   /**

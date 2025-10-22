@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline';">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DotCommand Task Manager</title>
+    <style>
+        * { box-sizing: border-box; font-family: var(--vscode-font-family); }
+        body {
+            padding: 0; margin: 0; overflow-x: hidden;
+            background: var(--vscode-editor-background);
+            color: var(--vscode-editor-foreground);
+        }
+        .header {
+            background: var(--vscode-sideBar-background);
+            padding: 16px;
+            border-bottom: 1px solid var(--vscode-panel-border);
+            display: flex; align-items: center; gap: 12px;
+        }
+        .header h1 {
+            margin: 0; font-size: 18px;
+            color: var(--vscode-titleBar-activeForeground);
+        }
+        .add-button {
+            background: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            border: none; padding: 8px 16px;
+            border-radius: 4px; cursor: pointer; font-size: 14px;
+        }
+        .add-button:hover { background: var(--vscode-button-hoverBackground); }
+        .task-list {
+            padding: 16px; max-height: calc(100vh - 80px); overflow-y: auto;
+        }
+        .task-card {
+            background: var(--vscode-editorWidget-background);
+            border: 1px solid var(--vscode-input-border);
+            border-radius: 6px; margin-bottom: 12px; overflow: hidden;
+        }
+        .task-card:hover { border-color: var(--vscode-focusBorder); }
+        .task-header {
+            padding: 12px 16px; background: var(--vscode-sideBar-background);
+            border-bottom: 1px solid var(--vscode-panel-border);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .task-label {
+            font-weight: bold; color: var(--vscode-textLink-foreground); margin: 0;
+        }
+        .task-category {
+            background: var(--vscode-badge-background);
+            color: var(--vscode-badge-foreground);
+            padding: 2px 6px; border-radius: 3px; font-size: 12px; text-transform: uppercase;
+        }
+        .task-content { padding: 16px; }
+        .task-command {
+            font-family: var(--vscode-editor-font-family);
+            background: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            border: 1px solid var(--vscode-input-border);
+            padding: 8px; border-radius: 4px; font-size: 13px; width: 100%;
+        }
+        .task-description {
+            font-size: 12px; color: var(--vscode-descriptionForeground); margin-top: 8px;
+        }
+        .task-actions { display: flex; gap: 8px; margin-top: 12px; }
+        .action-button { padding: 6px 12px; border-radius: 3px; border: 1px solid var(--vscode-button-border); background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground); cursor: pointer; font-size: 12px; }
+        .action-button:hover { background: var(--vscode-button-secondaryHoverBackground); }
+        .action-button.primary { background: var(--vscode-button-background); color: var(--vscode-button-foreground); }
+        .action-button.primary:hover { background: var(--vscode-button-hoverBackground); }
+        .action-button.danger { background: var(--vscode-errorForeground); color: white; border-color: var(--vscode-errorForeground); }
+        .action-button.danger:hover { opacity: 0.8; }
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--vscode-descriptionForeground); }
+        .empty-state h3 { margin: 0 0 8px 0; color: var(--vscode-foreground); }
+        .task-form { background: var(--vscode-editorWidget-background); border: 1px solid var(--vscode-input-border); border-radius: 6px; padding: 20px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; margin-bottom: 4px; font-weight: 500; color: var(--vscode-input-foreground); }
+        .form-input, .form-textarea, .form-select { width: 100%; padding: 8px 12px; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); border-radius: 4px; font-family: var(--vscode-editor-font-family); font-size: 13px; }
+        .form-input:focus, .form-textarea:focus, .form-select:focus { outline: 1px solid var(--vscode-focusBorder); }
+        .form-textarea { resize: vertical; min-height: 60px; }
+        .form-actions { display: flex; gap: 8px; justify-content: flex-end; }
+        .categories { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+        .category-tag { padding: 4px 8px; background: var(--vscode-badge-background); color: var(--vscode-badge-foreground); border-radius: 12px; font-size: 11px; cursor: pointer; }
+        .category-tag.active { background: var(--vscode-progressBar-background); color: var(--vscode-badge-foreground); }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📋 Task Manager</h1>
+        <button class="add-button" id="addTaskBtn">➕ Add NPM Task</button>
+    </div>
+
+    <div id="taskForm" class="task-form" style="display: none;">
+        <div class="form-group">
+            <label class="form-label" for="taskLabel">Task Label *</label>
+            <input type="text" class="form-input" id="taskLabel" placeholder="e.g., Build Project">
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="taskCommand">NPM Command *</label>
+            <input type="text" class="form-input" id="taskCommand" placeholder="e.g., npm run build">
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="taskDescription">Description</label>
+            <input type="text" class="form-input" id="taskDescription" placeholder="What this task does">
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="taskCategory">Category</label>
+            <select class="form-select" id="taskCategory">
+                <option value="">Select Category</option>
+                <option value="Setup">Setup</option>
+                <option value="Development">Development</option>
+                <option value="Build">Build</option>
+                <option value="Testing">Testing</option>
+                <option value="Code Quality">Code Quality</option>
+                <option value="Deployment">Deployment</option>
+                <option value="Maintenance">Maintenance</option>
+            </select>
+        </div>
+        <div class="form-actions">
+            <button class="action-button" id="cancelBtn">Cancel</button>
+            <button class="action-button primary" id="saveBtn">Save Task</button>
+        </div>
+    </div>
+
+    <div id="categories" class="categories" style="display: none;">
+        <span class="category-tag active" data-category="">All</span>
+    </div>
+
+    <div id="taskList" class="task-list">
+        <div class="empty-state" id="emptyState">
+            <h3>No tasks yet</h3>
+            <p>Add your first NPM task using the button above!</p>
+        </div>
+    </div>
+
+    <script nonce="{nonce}">
+        const vscode = acquireVsCodeApi();
+
+        let tasks = [];
+        let editingIndex = -1;
+        let currentFilter = '';
+
+        const addTaskBtn = document.getElementById('addTaskBtn');
+        const taskForm = document.getElementById('taskForm');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const taskList = document.getElementById('taskList');
+        const categories = document.getElementById('categories');
+        const emptyState = document.getElementById('emptyState');
+        const taskLabel = document.getElementById('taskLabel');
+        const taskCommand = document.getElementById('taskCommand');
+        const taskDescription = document.getElementById('taskDescription');
+        const taskCategory = document.getElementById('taskCategory');
+
+        window.addEventListener('load', () => {
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            addTaskBtn.addEventListener('click', showAddForm);
+            cancelBtn.addEventListener('click', hideForm);
+            saveBtn.addEventListener('click', saveTask);
+        }
+
+        function showAddForm() {
+            editingIndex = -1;
+            clearForm();
+            taskForm.style.display = 'block';
+            addTaskBtn.style.display = 'none';
+            taskLabel.focus();
+        }
+
+        function hideForm() {
+            taskForm.style.display = 'none';
+            addTaskBtn.style.display = 'inline-block';
+            clearForm();
+        }
+
+        function clearForm() {
+            taskLabel.value = '';
+            taskCommand.value = '';
+            taskDescription.value = '';
+            taskCategory.value = '';
+        }
+
+        function populateForm(task, index) {
+            editingIndex = index;
+            taskLabel.value = task.label || '';
+            taskCommand.value = task.command || '';
+            taskDescription.value = task.description || '';
+            taskCategory.value = task.category || '';
+            taskForm.style.display = 'block';
+            addTaskBtn.style.display = 'none';
+            taskLabel.focus();
+        }
+
+        function saveTask() {
+            const label = taskLabel.value.trim();
+            const command = taskCommand.value.trim();
+            const description = taskDescription.value.trim();
+            const category = taskCategory.value;
+
+            if (!label || !command) {
+                vscode.postMessage({ type: 'error', message: 'Label and command are required!' });
+                return;
+            }
+
+            if (!command.startsWith('npm ') && !command.startsWith('yarn ') && !command.startsWith('pnpm ')) {
+                vscode.postMessage({ type: 'error', message: 'Please use npm, yarn, or pnpm commands!' });
+                return;
+            }
+
+            const taskData = {
+                label,
+                command,
+                description: description || undefined,
+                category: category || undefined
+            };
+
+            vscode.postMessage({
+                type: editingIndex >= 0 ? 'updateTask' : 'addTask',
+                task: taskData,
+                index: editingIndex
+            });
+
+            hideForm();
+        }
+
+        function renderTasks(taskData) {
+            tasks = taskData;
+            updateCategories();
+
+            if (tasks.length === 0) {
+                emptyState.style.display = 'block';
+                categories.style.display = 'none';
+                taskList.innerHTML = '<div class="empty-state" id="emptyState"><h3>No tasks yet</h3><p>Add your first NPM task using the button above!</p></div>';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            categories.style.display = 'flex';
+
+            let filteredTasks = tasks;
+            if (currentFilter) {
+                filteredTasks = tasks.filter(task => task.category === currentFilter);
+            }
+
+            taskList.innerHTML = filteredTasks.map((task, index) => renderTaskCard(task, index)).join('');
+
+            bindTaskActions();
+        }
+
+        function renderTaskCard(task, index) {
+            const actualIndex = currentFilter ?
+                tasks.findIndex(t => t.label === task.label && t.command === task.command) :
+                index;
+
+            return `<div class="task-card"><div class="task-header"><span class="task-label">${escapeHtml(task.label)}</span>${task.category ? `<span class="task-category">${escapeHtml(task.category)}</span>` : ''}</div><div class="task-content"><code class="task-command">${escapeHtml(task.command)}</code>${task.description ? `<div class="task-description">${escapeHtml(task.description)}</div>` : ''}<div class="task-actions"><button class="action-button" onclick="runTask(${actualIndex})">▶️ Run</button><button class="action-button" onclick="editTask(${actualIndex})">✏️ Edit</button><button class="action-button danger" onclick="deleteTask(${actualIndex})">🗑️ Delete</button></div></div></div>`;
+        }
+
+        function updateCategories() {
+            const categorySet = new Set(tasks.map(task => task.category).filter(Boolean));
+            const categoryArray = Array.from(categorySet).sort();
+
+            categories.innerHTML = `<span class="category-tag active" data-category="">All</span>${categoryArray.map(category => `<span class="category-tag ${currentFilter === category ? 'active' : ''}" data-category="${escapeHtml(category)}">${escapeHtml(category)}</span>`).join('')}`;
+
+            categories.querySelectorAll('.category-tag').forEach(tag => {
+                tag.addEventListener('click', (e) => {
+                    currentFilter = e.target.dataset.category || '';
+                    renderTasks(tasks);
+                });
+            });
+        }
+
+        function bindTaskActions() {}
+
+        window.runTask = function(index) {
+            vscode.postMessage({ type: 'runTask', index });
+        };
+
+        window.editTask = function(index) {
+            const task = tasks[index];
+            if (task) {
+                populateForm(task, index);
+            }
+        };
+
+        window.deleteTask = function(index) {
+            if (confirm('Delete task "' + tasks[index].label + '"?')) {
+                vscode.postMessage({ type: 'deleteTask', index });
+            }
+        };
+
+        window.addEventListener('message', event => {
+            const message = event.data;
+            switch (message.type) {
+                case 'loadTasks':
+                    renderTasks(message.tasks);
+                    break;
+                case 'taskUpdated':
+                    renderTasks(message.tasks);
+                    vscode.postMessage({ type: 'showInfo', message: 'Task saved successfully!' });
+                    break;
+                case 'taskDeleted':
+                    renderTasks(message.tasks);
+                    vscode.postMessage({ type: 'showInfo', message: 'Task deleted!' });
+                    break;
+                case 'error':
+                    alert(message.message);
+                    break;
+            }
+        });
+
+        function escapeHtml(text) {
+            const map = { '&': '&', '<': '<', '>': '>', '"': '"', "'": '&#039;' };
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
+    </script>
+</body>
+</html>

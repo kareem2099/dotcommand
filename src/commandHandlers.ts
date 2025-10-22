@@ -5,6 +5,8 @@ import { handlePreparedCommand } from './preparedCommands';
 import { CommandInput } from './types';
 import { detectCommandCategory } from './commandDetection';
 import { cleanTerminalCommand } from './commandCleaning';
+import { CommandValidator } from './commandValidator';
+import { CommandTestWebview } from './testWebview';
 
 let storage: CommandStorage;
 let treeDataProvider: CommandsTreeDataProvider;
@@ -49,64 +51,65 @@ export async function handleSaveCommand(): Promise<void> {
       return; // User cancelled or entered empty command
     }
 
-    // Show input box for optional name
-    const nameInput = await window.showInputBox({
-      prompt: 'Enter a name for this command (optional)',
-      placeHolder: 'e.g., Install Lodash',
-      value: undefined,
-      validateInput: (value: string) => {
-        // Name is optional, so no validation needed
-        return null;
+    // Offer to test the command first
+    const actionChoice = await window.showQuickPick(
+      [
+        {
+          label: 'Save Directly',
+          detail: 'Skip validation and save the command immediately',
+          value: 'save'
+        },
+        {
+          label: 'Test Command First',
+          detail: 'Run validation and preview before saving',
+          value: 'test'
+        }
+      ],
+      {
+        placeHolder: 'How would you like to proceed?',
+        matchOnDetail: true
       }
-    });
+    );
 
-    // Show input box for optional category
-    const categoryInput = await window.showInputBox({
-      prompt: 'Enter a category for this command (optional)',
-      placeHolder: 'e.g., npm, git, docker',
-      value: undefined,
-      validateInput: (value: string) => {
-        // Category is optional, so no validation needed
-        return null;
-      }
-    });
-
-    // Auto-detect category based on command content
-    let autoCategory = categoryInput?.trim();
-
-    if (!autoCategory) {
-      autoCategory = detectCommandCategory(commandInput.trim().toLowerCase());
+    if (!actionChoice) {
+      return; // User cancelled
     }
 
-    // Prepare command data
-    const commandData: CommandInput = {
-      command: commandInput.trim(),
-      name: nameInput?.trim() || undefined,
-      category: autoCategory,
-    };
+    if (actionChoice.value === 'test') {
+      // Use the test command handler with the already collected command
+      const validationResult = await CommandValidator.validateCommand(commandInput.trim());
 
-    // Check if command already exists
-    if (storage.commandExists(commandData.command)) {
-      const overwrite = await window.showWarningMessage(
-        'This command already exists. Do you want to save it again?',
-        'Yes',
-        'No'
-      );
+      // Show test results in webview
+      const testWebview = CommandTestWebview.getInstance();
 
-      if (overwrite !== 'Yes') {
-        return;
-      }
+      // Set up message handler for webview actions
+      testWebview.setMessageHandler(async (message: any) => {
+        switch (message.type) {
+          case 'save':
+            // Proceed to save the command
+            testWebview.dispose(); // Close the webview
+            await proceedWithSave(commandInput.trim());
+            break;
+          case 'edit':
+            // Close webview and restart save process
+            testWebview.dispose();
+            // Recursively call handleSaveCommand to restart the flow
+            await handleSaveCommand();
+            break;
+          case 'cancel':
+            // Just close the webview
+            testWebview.dispose();
+            break;
+        }
+      });
+
+      // Show the validation results
+      await testWebview.showTestResults(commandInput.trim(), validationResult);
+      return; // Exit here - webview handles the rest
     }
 
-    // Save the command
-    const savedCommand = await storage.saveCommand(commandData);
-
-    // Refresh the tree view to show the new command
-    treeDataProvider.refresh();
-
-    // Show success message with command name or command preview
-    const displayName = savedCommand.name || savedCommand.command.substring(0, 50) + (savedCommand.command.length > 50 ? '...' : '');
-    window.showInformationMessage(`Command saved: ${displayName}`);
+    // Direct save path continues below
+    await proceedWithSave(commandInput.trim());
 
   } catch (error) {
     console.error('Error saving command:', error);
@@ -141,15 +144,20 @@ export async function handleRunCommandFromTree(item: any): Promise<void> {
   );
 
   if (confirm === 'Yes, Run') {
-    const terminal = window.activeTerminal || window.terminals[0];
+    // Get existing terminal or create new one
+    let terminal = window.activeTerminal || window.terminals[0];
     if (!terminal) {
-      window.showErrorMessage('No active terminal found');
-      return;
+      terminal = window.createTerminal('DotCommand');
     }
 
-    // Send command to terminal
-    terminal.sendText(command.command);
-    window.showInformationMessage(`Running command: ${command.name || command.command}`);
+    // Show the terminal and wait for it to be ready
+    terminal.show();
+
+    // Wait for terminal to be ready, then send command
+    setTimeout(() => {
+      terminal.sendText(command.command);
+      window.showInformationMessage(`Running command: ${command.name || command.command}`);
+    }, 500); // Wait 500ms for terminal to fully open
   }
 }
 
@@ -731,6 +739,178 @@ async function generateTaskTemplate(templateType: string): Promise<any> {
   }
 
   return baseTasks;
+}
+
+/**
+ * Handle testing a command before saving or from tree
+ */
+export async function handleTestCommand(treeItem?: any): Promise<void> {
+  try {
+    let commandToTest = '';
+    let nameToShow = '';
+
+    // If called from tree item context menu
+    if (treeItem) {
+      const command = treeDataProvider.getCommandById(treeItem.id);
+      if (command) {
+        commandToTest = command.command;
+        nameToShow = command.name || ""; 
+      } else {
+        window.showErrorMessage('Could not find the command to test');
+        return;
+      }
+    } else {
+      // Get the currently selected text or active editor content
+      const activeEditor = window.activeTextEditor;
+      let selectedText = '';
+
+      if (activeEditor) {
+        // Get selected text if any, otherwise get current line
+        selectedText = activeEditor.document.getText(activeEditor.selection) ||
+                       activeEditor.document.lineAt(activeEditor.selection.active.line).text.trim();
+      }
+
+      // Show input box for command if no selection
+      commandToTest = selectedText;
+      if (!commandToTest.trim()) {
+        commandToTest = await window.showInputBox({
+          prompt: 'Enter the command to test',
+          placeHolder: 'e.g., npm install lodash',
+          validateInput: (value: string) => {
+            if (!value || value.trim().length === 0) {
+              return 'Command cannot be empty';
+            }
+            return null;
+          }
+        }) || '';
+
+        if (!commandToTest.trim()) {
+          return; // User cancelled
+        }
+      }
+    }
+
+    // Validate the command
+    const validationResult = await CommandValidator.validateCommand(commandToTest, nameToShow || undefined);
+
+    // Show test results in webview
+    const testWebview = CommandTestWebview.getInstance();
+
+    // Set up message handler for webview actions - different behavior for tree vs save
+    testWebview.setMessageHandler(async (message: any) => {
+      switch (message.type) {
+        case 'save':
+          if (treeItem) {
+            // From tree - just close webview
+            testWebview.dispose();
+            window.showInformationMessage('Command analysis complete');
+          } else {
+            // Proceed to save the command
+            testWebview.dispose(); // Close the webview
+            await proceedWithSave(commandToTest);
+          }
+          break;
+        case 'edit':
+          if (treeItem) {
+            // From tree - close and show info
+            testWebview.dispose();
+            window.showInformationMessage('Command analysis complete - review results above');
+          } else {
+            // Close webview to allow editing
+            testWebview.dispose();
+            // Re-run test command to restart the flow
+            await handleTestCommand();
+          }
+          break;
+        case 'cancel':
+          // Just close the webview
+          testWebview.dispose();
+          break;
+      }
+    });
+
+    // Show the validation results
+    await testWebview.showTestResults(commandToTest, validationResult, nameToShow?.trim());
+
+    // Update button text for tree item testing
+    if (treeItem) {
+      // Use a custom message handler to show different buttons for analysis vs saving
+      testWebview.setMessageHandler(async (message: any) => {
+        switch (message.type) {
+          case 'save':
+            testWebview.dispose();
+            window.showInformationMessage('Command analysis complete');
+            break;
+          case 'edit':
+            testWebview.dispose();
+            window.showInformationMessage('Command analysis shown - review results above');
+            break;
+          case 'cancel':
+            testWebview.dispose();
+            break;
+        }
+      });
+    }
+
+  } catch (error) {
+    console.error('Error testing command:', error);
+    window.showErrorMessage(`Failed to test command: ${error}`);
+  }
+}
+
+/**
+ * Proceed to save a command (called from webview)
+ */
+async function proceedWithSave(command: string, name?: string): Promise<void> {
+  try {
+    // Show input box for category (optional)
+    const categoryInput = await window.showInputBox({
+      prompt: 'Enter a category for this command (optional)',
+      placeHolder: 'e.g., npm, git, docker',
+      value: undefined
+    });
+
+    // Auto-detect category based on command content
+    let autoCategory = categoryInput?.trim();
+    if (!autoCategory) {
+      const { detectCommandCategory } = require('./commandDetection');
+      autoCategory = detectCommandCategory(command.trim().toLowerCase());
+    }
+
+    // Prepare command data
+    const commandData: CommandInput = {
+      command: command.trim(),
+      name: name?.trim() || undefined,
+      category: autoCategory,
+    };
+
+    // Check if command already exists
+    if (storage.commandExists(commandData.command)) {
+      const overwrite = await window.showWarningMessage(
+        'This command already exists. Do you want to save it again?',
+        'Yes',
+        'No'
+      );
+
+      if (overwrite !== 'Yes') {
+        return;
+      }
+    }
+
+    // Save the command
+    const savedCommand = await storage.saveCommand(commandData);
+
+    // Refresh the tree view to show the new command
+    treeDataProvider.refresh();
+
+    // Show success message
+    const displayName = savedCommand.name || savedCommand.command.substring(0, 50) + (savedCommand.command.length > 50 ? '...' : '');
+    window.showInformationMessage(`Command saved: ${displayName}`);
+
+  } catch (error) {
+    console.error('Error saving command:', error);
+    window.showErrorMessage(`Failed to save command: ${error}`);
+  }
 }
 
 /**

@@ -609,6 +609,425 @@ const PREPARED_COMMANDS: PreparedCommand[] = [
         defaultValue: 'new-directory'
       }
     ]
+  },
+
+  // Python Commands
+  {
+    name: 'Install Python Package',
+    command: 'pip install {package}',
+    description: 'Install a Python package using pip',
+    category: 'Python Commands',
+    parameters: [
+      {
+        name: 'package',
+        description: 'Package name (e.g., requests, numpy, pandas)',
+        defaultValue: 'requests'
+      }
+    ]
+  },
+  {
+    name: 'Install Requirements',
+    command: 'pip install -r requirements.txt',
+    description: 'Install packages from requirements.txt',
+    category: 'Python Commands',
+    parameters: []
+  },
+  {
+    name: 'Create Virtual Environment',
+    command: 'python -m venv {name}',
+    description: 'Create a new Python virtual environment',
+    category: 'Python Commands',
+    parameters: [
+      {
+        name: 'name',
+        description: 'Virtual environment name',
+        defaultValue: 'venv'
+      }
+    ]
+  },
+  {
+    name: 'Activate Virtual Environment',
+    command: 'source {name}/bin/activate',
+    description: 'Activate a Python virtual environment',
+    category: 'Python Commands',
+    parameters: [
+      {
+        name: 'name',
+        description: 'Virtual environment name',
+        defaultValue: 'venv'
+      }
+    ]
+  },
+  {
+    name: 'Run Python Script',
+    command: 'python {script}',
+    description: 'Execute a Python script',
+    category: 'Python Commands',
+    parameters: [
+      {
+        name: 'script',
+        description: 'Python script file (e.g., main.py, app.py)',
+        defaultValue: 'main.py',
+        validation: (value) => value.endsWith('.py'),
+        validationMessage: 'File must be a Python script (.py extension)'
+      }
+    ]
+  },
+  {
+    name: 'Run Django Server',
+    command: 'python manage.py runserver',
+    description: 'Start Django development server',
+    category: 'Python Commands',
+    parameters: []
+  },
+  {
+    name: 'Make Django Migrations',
+    command: 'python manage.py makemigrations',
+    description: 'Create Django database migrations',
+    category: 'Python Commands',
+    parameters: []
+  },
+  {
+    name: 'Run Django Migrations',
+    command: 'python manage.py migrate',
+    description: 'Apply Django database migrations',
+    category: 'Python Commands',
+    parameters: []
+  },
+
+  // Yarn Commands
+  {
+    name: 'Yarn Install',
+    command: 'yarn install',
+    description: 'Install all project dependencies with Yarn',
+    category: 'Yarn Commands',
+    parameters: []
+  },
+  {
+    name: 'Yarn Add Package',
+    command: 'yarn add {package}',
+    description: 'Add a package with Yarn',
+    category: 'Yarn Commands',
+    parameters: [
+      {
+        name: 'package',
+        description: 'Package name (e.g., lodash, react)',
+        defaultValue: 'package-name'
+      }
+    ]
+  },
+  {
+    name: 'Yarn Add Dev Package',
+    command: 'yarn add -D {package}',
+    description: 'Add a dev dependency with Yarn',
+    category: 'Yarn Commands',
+    parameters: [
+      {
+        name: 'package',
+        description: 'Package name',
+        defaultValue: 'dev-package-name'
+      }
+    ]
+  },
+  {
+    name: 'Yarn Dev',
+    command: 'yarn dev',
+    description: 'Start development server with Yarn',
+    category: 'Yarn Commands',
+    parameters: []
+  },
+  {
+    name: 'Yarn Build',
+    command: 'yarn build',
+    description: 'Build project for production with Yarn',
+    category: 'Yarn Commands',
+    parameters: []
+  },
+  {
+    name: 'Yarn Test',
+    command: 'yarn test',
+    description: 'Run tests with Yarn',
+    category: 'Yarn Commands',
+    parameters: []
+  },
+
+  // Database Commands
+  {
+    name: 'MySQL Connect',
+    command: 'mysql -u {user} -p -h {host} {database}',
+    description: 'Connect to MySQL database',
+    category: 'Database Commands',
+    parameters: [
+      {
+        name: 'user',
+        description: 'MySQL username',
+        defaultValue: 'root'
+      },
+      {
+        name: 'host',
+        description: 'MySQL host',
+        defaultValue: 'localhost'
+      },
+      {
+        name: 'database',
+        description: 'Database name',
+        defaultValue: 'mydb'
+      }
+    ]
+  },
+  {
+    name: 'PostgreSQL Connect',
+    command: 'psql -h {host} -U {user} -d {database}',
+    description: 'Connect to PostgreSQL database',
+    category: 'Database Commands',
+    parameters: [
+      {
+        name: 'host',
+        description: 'PostgreSQL host',
+        defaultValue: 'localhost'
+      },
+      {
+        name: 'user',
+        description: 'PostgreSQL username',
+        defaultValue: 'postgres'
+      },
+      {
+        name: 'database',
+        description: 'Database name',
+        defaultValue: 'mydb'
+      }
+    ]
+  },
+  {
+    name: 'MongoDB Connect',
+    command: 'mongosh "mongodb://{host}:{port}/{database}"',
+    description: 'Connect to MongoDB database',
+    category: 'Database Commands',
+    parameters: [
+      {
+        name: 'host',
+        description: 'MongoDB host',
+        defaultValue: 'localhost'
+      },
+      {
+        name: 'port',
+        description: 'MongoDB port',
+        defaultValue: '27017'
+      },
+      {
+        name: 'database',
+        description: 'Database name',
+        defaultValue: 'mydb'
+      }
+    ]
+  },
+  {
+    name: 'Redis CLI',
+    command: 'redis-cli -h {host} -p {port}',
+    description: 'Connect to Redis server',
+    category: 'Database Commands',
+    parameters: [
+      {
+        name: 'host',
+        description: 'Redis host',
+        defaultValue: 'localhost'
+      },
+      {
+        name: 'port',
+        description: 'Redis port',
+        defaultValue: '6379'
+      }
+    ]
+  },
+
+  // Advanced Git Commands
+  {
+    name: 'Git Stash Changes',
+    command: 'git stash',
+    description: 'Stash current changes',
+    category: 'Git Commands',
+    parameters: []
+  },
+  {
+    name: 'Git Stash Pop',
+    command: 'git stash pop',
+    description: 'Apply and remove latest stash',
+    category: 'Git Commands',
+    parameters: []
+  },
+  {
+    name: 'Git Merge Branch',
+    command: 'git merge {branch}',
+    description: 'Merge specified branch into current branch',
+    category: 'Git Commands',
+    parameters: [
+      {
+        name: 'branch',
+        description: 'Branch to merge',
+        defaultValue: 'feature-branch'
+      }
+    ]
+  },
+  {
+    name: 'Git Rebase Branch',
+    command: 'git rebase {branch}',
+    description: 'Rebase current branch onto specified branch',
+    category: 'Git Commands',
+    parameters: [
+      {
+        name: 'branch',
+        description: 'Branch to rebase onto',
+        defaultValue: 'main'
+      }
+    ]
+  },
+  {
+    name: 'Git Cherry Pick',
+    command: 'git cherry-pick {commit}',
+    description: 'Cherry-pick a specific commit',
+    category: 'Git Commands',
+    parameters: [
+      {
+        name: 'commit',
+        description: 'Commit hash to cherry-pick',
+        defaultValue: 'abc123'
+      }
+    ]
+  },
+  {
+    name: 'Git Reset Hard',
+    command: 'git reset --hard {commit}',
+    description: 'Reset to specific commit (WARNING: destructive)',
+    category: 'Git Commands',
+    parameters: [
+      {
+        name: 'commit',
+        description: 'Commit hash or HEAD~N',
+        defaultValue: 'HEAD~1'
+      }
+    ]
+  },
+
+  // Code Quality Tools
+  {
+    name: 'ESLint Fix',
+    command: 'npx eslint {files} --fix',
+    description: 'Fix ESLint issues automatically',
+    category: 'Code Quality Commands',
+    parameters: [
+      {
+        name: 'files',
+        description: 'Files to lint (e.g., src/, *.js)',
+        defaultValue: 'src/'
+      }
+    ]
+  },
+  {
+    name: 'Prettier Format',
+    command: 'npx prettier --write {files}',
+    description: 'Format code with Prettier',
+    category: 'Code Quality Commands',
+    parameters: [
+      {
+        name: 'files',
+        description: 'Files to format (e.g., src/, *.js)',
+        defaultValue: 'src/'
+      }
+    ]
+  },
+  {
+    name: 'TypeScript Check',
+    command: 'npx tsc --noEmit',
+    description: 'Run TypeScript type checking',
+    category: 'Code Quality Commands',
+    parameters: []
+  },
+  {
+    name: 'Stylelint Fix',
+    command: 'npx stylelint {files} --fix',
+    description: 'Fix CSS linting issues',
+    category: 'Code Quality Commands',
+    parameters: [
+      {
+        name: 'files',
+        description: 'CSS files to lint',
+        defaultValue: '*.css'
+      }
+    ]
+  },
+
+  // Testing Tools
+  {
+    name: 'Jest Watch',
+    command: 'npx jest --watch',
+    description: 'Run Jest tests in watch mode',
+    category: 'Testing Commands',
+    parameters: []
+  },
+  {
+    name: 'Jest Coverage',
+    command: 'npx jest --coverage',
+    description: 'Run Jest tests with coverage report',
+    category: 'Testing Commands',
+    parameters: []
+  },
+  {
+    name: 'Cypress Open',
+    command: 'npx cypress open',
+    description: 'Open Cypress test runner',
+    category: 'Testing Commands',
+    parameters: []
+  },
+  {
+    name: 'Cypress Run',
+    command: 'npx cypress run',
+    description: 'Run Cypress tests headlessly',
+    category: 'Testing Commands',
+    parameters: []
+  },
+  {
+    name: 'Playwright Test',
+    command: 'npx playwright test',
+    description: 'Run Playwright tests',
+    category: 'Testing Commands',
+    parameters: []
+  },
+  {
+    name: 'Vitest Run',
+    command: 'npx vitest run',
+    description: 'Run Vitest tests',
+    category: 'Testing Commands',
+    parameters: []
+  },
+
+  // Deployment Commands
+  {
+    name: 'Vercel Deploy',
+    command: 'npx vercel --prod',
+    description: 'Deploy to Vercel production',
+    category: 'Deployment Commands',
+    parameters: []
+  },
+  {
+    name: 'Netlify Deploy',
+    command: 'npx netlify deploy --prod',
+    description: 'Deploy to Netlify production',
+    category: 'Deployment Commands',
+    parameters: []
+  },
+  {
+    name: 'Firebase Deploy',
+    command: 'firebase deploy',
+    description: 'Deploy to Firebase',
+    category: 'Deployment Commands',
+    parameters: []
+  },
+  {
+    name: 'Heroku Deploy',
+    command: 'git push heroku main',
+    description: 'Deploy to Heroku',
+    category: 'Deployment Commands',
+    parameters: []
   }
 ];
 
@@ -697,14 +1116,20 @@ export async function handlePreparedCommand(commandTemplate: string): Promise<vo
     );
 
     if (confirm === 'Yes, Run') {
-      const terminal = window.activeTerminal || window.terminals[0];
+      // Get existing terminal or create new one
+      let terminal = window.activeTerminal || window.terminals[0];
       if (!terminal) {
-        window.showErrorMessage('No active terminal found');
-        return;
+        terminal = window.createTerminal('DotCommand');
       }
 
-      terminal.sendText(finalCommand);
-      window.showInformationMessage(`Executed: ${finalCommand}`);
+      // Show the terminal and wait for it to be ready
+      terminal.show();
+
+      // Wait for terminal to be ready, then send command
+      setTimeout(() => {
+        terminal.sendText(finalCommand);
+        window.showInformationMessage(`Executed: ${finalCommand}`);
+      }, 500); // Wait 500ms for terminal to fully open
     }
 
   } catch (error) {

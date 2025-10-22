@@ -33,9 +33,14 @@ export async function handleViewTrash(): Promise<void> {
       detail: 'Select to view and restore deleted commands'
     },
     {
-      label: `🧹 Empty Trash (${trashStats.count} items)`,
+      label: `🧹 Empty Trash (Auto - 90+ days)`,
       description: `Remove all items older than 90 days`,
       detail: 'Permanently delete expired trash'
+    },
+    {
+      label: `🗂️ Empty All Trash (${trashStats.count} items)`,
+      description: 'Remove ALL deleted commands permanently',
+      detail: '⚠️ This action cannot be undone!'
     }
   ], {
     placeHolder: 'Choose trash management option'
@@ -44,9 +49,12 @@ export async function handleViewTrash(): Promise<void> {
   if (trashInfo?.label.startsWith('🗑️')) {
     // Show restore interface for deleted commands
     await showTrashRestoreInterface(deletedCommands);
-  } else if (trashInfo?.label.startsWith('🧹')) {
-    // Empty expired trash
+  } else if (trashInfo?.label.startsWith('🧹 Empty Trash (Auto')) {
+    // Empty expired trash (existing functionality)
     await emptyExpiredTrash();
+  } else if (trashInfo?.label.startsWith('🗂️')) {
+    // Empty all trash (new manual option)
+    await emptyAllTrash();
   }
 }
 
@@ -148,6 +156,31 @@ export async function handleRestoreCommandFromTrash(item: any): Promise<void> {
  */
 function getTimeSinceDeletion(deletedAt: number): number {
   return Math.floor((Date.now() - deletedAt) / (24 * 60 * 60 * 1000));
+}
+
+/**
+ * Empty all trash (remove all deleted items manually)
+ */
+async function emptyAllTrash(): Promise<void> {
+  const trashStats = storage.getTrashStats();
+
+  const confirm = await window.showWarningMessage(
+    `Empty ALL trash? This will permanently delete ALL ${trashStats.count} deleted commands.\n\nThis action cannot be undone!`,
+    { modal: true },
+    'Empty All Trash',
+    'Cancel'
+  );
+
+  if (confirm === 'Empty All Trash') {
+    const allCommands = storage.getAllCommandsIncludingDeleted();
+    const activeCommands = allCommands.filter(cmd => !cmd.deletedAt);
+
+    // Save only the active commands (removes all deleted ones)
+    await storage['saveAllCommands'](activeCommands);
+
+    treeDataProvider.refresh();
+    window.showInformationMessage(`Emptied all trash: ${trashStats.count} command(s) permanently deleted.`);
+  }
 }
 
 /**
