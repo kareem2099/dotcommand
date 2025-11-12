@@ -1,5 +1,12 @@
-import { ExtensionContext, WebviewPanel, window, ViewColumn, Uri } from 'vscode';
-import { CommandStorage } from './storage';
+import { ExtensionContext, WebviewPanel, window, ViewColumn, Uri, env } from 'vscode';
+import { CommandStorage } from '../storage/storage';
+import { CommandInput } from '../utils/types';
+
+interface WebviewMessage {
+  command: string;
+  id?: string;
+  updates?: Partial<CommandInput>;
+}
 
 export class CommandWebview {
   private panel: WebviewPanel | undefined;
@@ -33,7 +40,7 @@ export class CommandWebview {
   /**
    * Handle messages from the webview
    */
-  private handleMessage(message: any): void {
+  private handleMessage(message: WebviewMessage): void {
     switch (message.command) {
       case 'getCommands':
         this.sendCommands();
@@ -42,10 +49,14 @@ export class CommandWebview {
         this.copyCommandToClipboard(message.command);
         break;
       case 'deleteCommand':
-        this.deleteCommand(message.id);
+        if (message.id) {
+          this.deleteCommand(message.id);
+        }
         break;
       case 'editCommand':
-        this.editCommand(message.id, message.updates);
+        if (message.id && message.updates) {
+          this.editCommand(message.id, message.updates);
+        }
         break;
     }
   }
@@ -54,7 +65,7 @@ export class CommandWebview {
    * Copy command to clipboard
    */
   private async copyCommandToClipboard(command: string): Promise<void> {
-    await require('vscode').env.clipboard.writeText(command);
+    await env.clipboard.writeText(command);
 
     // Notify webview that command was copied
     if (this.panel) {
@@ -94,7 +105,7 @@ export class CommandWebview {
   /**
    * Edit a command
    */
-  private async editCommand(id: string, updates: any): Promise<void> {
+  private async editCommand(id: string, updates: Partial<CommandInput>): Promise<void> {
     try {
       const updatedCommand = await this.storage.updateCommand(id, updates);
       if (updatedCommand) {

@@ -1,4 +1,4 @@
-import { commands, window, TreeItem, TreeItemCollapsibleState, ThemeIcon } from 'vscode';
+import { commands, TreeItem, TreeItemCollapsibleState, ThemeIcon } from 'vscode';
 
 /**
  * Handle the view commands action

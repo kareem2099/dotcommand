@@ -1,6 +1,12 @@
-import { commands, Disposable, ViewColumn, WebviewPanel, window, Uri, extensions } from 'vscode';
-import { ValidationLevel, ValidationResult } from './commandValidator';
-import { CommandTester } from './commandTester';
+import { Disposable, ViewColumn, WebviewPanel, window } from 'vscode';
+import { ValidationLevel, ValidationResult } from '../commands/validator';
+
+/**
+ * Message types sent from the webview to the extension
+ */
+interface WebviewMessage {
+  type: 'save' | 'edit' | 'cancel';
+}
 
 /**
  * Webview for displaying command test results
@@ -9,7 +15,7 @@ export class CommandTestWebview {
   private static instance: CommandTestWebview | null = null;
   private panel: WebviewPanel | null = null;
   private disposables: Disposable[] = [];
-  private messageHandlers: ((message: any) => void) | null = null;
+  private messageHandlers: ((message: WebviewMessage) => void) | null = null;
 
   /**
    * Get singleton instance
@@ -364,14 +370,14 @@ export class CommandTestWebview {
   /**
    * Set message handler callback
    */
-  public setMessageHandler(handler: (message: any) => void): void {
+  public setMessageHandler(handler: (message: WebviewMessage) => void): void {
     this.messageHandlers = handler;
   }
 
   /**
    * Handle messages from the webview
    */
-  private handleMessage(message: any): void {
+  private handleMessage(message: WebviewMessage): void {
     if (this.messageHandlers) {
       this.messageHandlers(message);
     }

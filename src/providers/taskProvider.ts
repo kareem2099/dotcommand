@@ -1,13 +1,12 @@
 import { workspace, Task, TaskProvider, TaskDefinition, ShellExecution, tasks, TaskScope, TaskGroup } from 'vscode';
-import { CommandStorage } from './storage';
-import { getPreparedCommandCategories, handlePreparedCommand } from './preparedCommands';
-import { SavedCommand } from './types';
+import { CommandStorage } from '../storage/storage';
+import { PreparedCommand } from '../commands/prepared';
 
 // Get prepared commands array from the module
-function getPreparedCommands(): any[] {
+async function getPreparedCommands(): Promise<PreparedCommand[]> {
   try {
     // Import the prepared commands array directly
-    const module = require('./preparedCommands');
+    const module = await import('../commands/prepared');
     if (module && module.PREPARED_COMMANDS) {
       return module.PREPARED_COMMANDS;
     }
@@ -97,7 +96,7 @@ export async function readTasksDotCommand(): Promise<DotCommandTask[]> {
     return userTasks;
   } catch (error) {
     // File doesn't exist or is invalid JSON - just return empty array
-    console.log('tasks.dotcommand not found or invalid, using default tasks');
+    console.log('tasks.dotcommand not found or invalid, using default tasks:', error);
     return [];
   }
 }
@@ -120,9 +119,9 @@ export function createTasksFromSavedCommands(storage: CommandStorage): DotComman
 /**
  * Creates VS Code tasks from built-in prepared commands
  */
-export function createTasksFromPreparedCommands(): DotCommandTask[] {
-  const preparedCommands = getPreparedCommands();
-  return preparedCommands.map((prepared: any) => ({
+export async function createTasksFromPreparedCommands(): Promise<DotCommandTask[]> {
+  const preparedCommands = await getPreparedCommands();
+  return preparedCommands.map((prepared: PreparedCommand) => ({
     type: 'dotcommand',
     label: `${prepared.name}`,
     command: prepared.command,
@@ -141,14 +140,13 @@ export async function convertToVSTasks(dotCommandTasks: DotCommandTask[]): Promi
 
   for (const dotCmd of dotCommandTasks) {
     // Build the final command with input variables if parameters exist
-    let finalCommand = dotCmd.command;
+    const finalCommand = dotCmd.command;
 
     // Create task definition
     const taskDefinition: DotCommandTask = { ...dotCmd };
 
     // Create shell execution
     let shellExecution: ShellExecution;
-    let args: string[] = [];
 
     if (dotCmd.parameters && dotCmd.parameters.length > 0) {
       // For parameterized commands, we need to handle input prompts
@@ -215,7 +213,7 @@ export class DotCommandTaskProvider implements TaskProvider {
       allTasks.push(...frequentCommands);
 
       // 3. Built-in prepared command tasks
-      const preparedCommandTasks = createTasksFromPreparedCommands();
+      const preparedCommandTasks = await createTasksFromPreparedCommands();
       allTasks.push(...preparedCommandTasks);
 
       // Convert to VS Code Task objects

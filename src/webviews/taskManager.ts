@@ -1,11 +1,18 @@
-import { window, workspace, WebviewPanel, Disposable, Uri, extensions } from 'vscode';
-import { readTasksDotCommand } from './taskProvider';
+import { window, workspace, WebviewPanel, Disposable, extensions, Uri } from 'vscode';
+import { readTasksDotCommand } from '../providers/taskProvider';
 
 interface DotCommandTask {
   label: string;
   command: string;
   description?: string;
   category?: string;
+}
+
+interface WebviewMessage {
+  type: string;
+  task?: DotCommandTask;
+  index?: number;
+  message?: string;
 }
 
 export class TaskManagerWebview {
@@ -102,31 +109,43 @@ export class TaskManagerWebview {
     }
   }
 
-  private async handleMessage(message: any): Promise<void> {
+  private async handleMessage(message: WebviewMessage): Promise<void> {
     try {
       switch (message.type) {
         case 'addTask':
-          await this.addTask(message.task);
+          if (message.task) {
+            await this.addTask(message.task);
+          }
           break;
         case 'updateTask':
-          await this.updateTask(message.index, message.task);
+          if (message.index !== undefined && message.task) {
+            await this.updateTask(message.index, message.task);
+          }
           break;
         case 'deleteTask':
-          await this.deleteTask(message.index);
+          if (message.index !== undefined) {
+            await this.deleteTask(message.index);
+          }
           break;
         case 'runTask':
-          await this.runTask(message.index);
+          if (message.index !== undefined) {
+            await this.runTask(message.index);
+          }
           break;
         case 'showInfo':
-          window.showInformationMessage(message.message);
+          if (message.message) {
+            window.showInformationMessage(message.message);
+          }
           break;
         case 'error':
-          window.showErrorMessage(message.message);
+          if (message.message) {
+            window.showErrorMessage(message.message);
+          }
           break;
       }
-    } catch (error) {
-      console.error('Error handling webview message:', error);
-      window.showErrorMessage(`Operation failed: ${error}`);
+    } catch (_error) {
+      console.error('Error handling webview message:', _error);
+      window.showErrorMessage(`Operation failed: ${_error instanceof Error ? _error.message : String(_error)}`);
     }
   }
 
@@ -164,7 +183,12 @@ export class TaskManagerWebview {
   private async runTask(index: number): Promise<void> {
     if (index >= 0 && index < this.currentTasks.length) {
       const task = this.currentTasks[index];
-      const terminal = window.createTerminal('DotCommand: ' + task.label);
+      const extension = extensions.getExtension('freerave.dotcommand');
+      const iconPath = extension ? Uri.joinPath(extension.extensionUri, 'assets', 'icons', 'icon.png') : undefined;
+      const terminal = window.createTerminal({
+        name: 'DotCommand: ' + task.label,
+        iconPath: iconPath
+      });
       terminal.show();
       terminal.sendText(task.command);
       window.showInformationMessage('Running: ' + task.label);
@@ -195,7 +219,7 @@ export class TaskManagerWebview {
           preparedTasks: this.currentTasks
         }, null, 2)));
         return;
-      } catch (error) {
+      } catch {
         continue;
       }
     }

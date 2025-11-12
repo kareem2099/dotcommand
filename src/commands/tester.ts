@@ -1,4 +1,9 @@
-import { ValidationLevel, ValidationResult } from './commandValidator';
+import { ValidationLevel, ValidationResult } from './validator';
+
+interface CommandParameter {
+  name: string;
+  defaultValue: string;
+}
 
 /**
  * Command tester for handling parameter resolution and execution testing
@@ -8,7 +13,7 @@ export class CommandTester {
   /**
    * Preview parameter resolution for commands with variables
    */
-  public static resolveParameters(command: string, parameters?: any[]): { resolvedCommand: string; parameterValues: Record<string, string> } {
+  public static resolveParameters(command: string, parameters?: CommandParameter[]): { resolvedCommand: string; parameterValues: Record<string, string> } {
     if (!parameters || parameters.length === 0) {
       return { resolvedCommand: command, parameterValues: {} };
     }
@@ -34,7 +39,7 @@ export class CommandTester {
   /**
    * Test command execution in a controlled environment (future enhancement)
    */
-  public static async testExecuteCommand(command: string, timeoutMs: number = 10000): Promise<{ success: boolean; output: string[]; error?: string }> {
+  public static async testExecuteCommand(command: string, _timeoutMs: number = 10000): Promise<{ success: boolean; output: string[]; error?: string }> {
     // For now, return simulated result
     // In future, could create disposable terminals or use system calls
     return {

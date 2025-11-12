@@ -1,16 +1,27 @@
-import { TreeDataProvider, TreeItem, TreeItemCollapsibleState, Event, EventEmitter, ProviderResult, ThemeIcon, workspace, Command } from 'vscode';
-import { CommandStorage } from './storage';
-import { SavedCommand } from './types';
-import { getPreparedCommandCategories, getPreparedCommandsForCategory } from './preparedCommands';
+import { TreeDataProvider, TreeItem, TreeItemCollapsibleState, Event, EventEmitter, ProviderResult, ThemeIcon, workspace } from 'vscode';
+import { CommandStorage } from '../storage/storage';
+import { SavedCommand } from '../utils/types';
+import { getPreparedCommandCategories, getPreparedCommandsForCategory } from '../commands/prepared';
+import {
+  SearchFilterState,
+  DEFAULT_SEARCH_FILTER_STATE,
+  loadFilterState,
+  saveFilterState,
+  clearFilterState,
+  filterSavedCommands,
+  STORAGE_KEYS
+} from '../utils/searchFilter';
 
 export class CommandsTreeDataProvider implements TreeDataProvider<TreeItem> {
   private _onDidChangeTreeData: EventEmitter<TreeItem | undefined | null | void> = new EventEmitter<TreeItem | undefined | null | void>();
   readonly onDidChangeTreeData: Event<TreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
   private storage: CommandStorage;
+  private _searchFilterState: SearchFilterState;
 
   constructor(storage: CommandStorage) {
     this.storage = storage;
+    this._searchFilterState = loadFilterState(STORAGE_KEYS.MY_COMMANDS_FILTER);
   }
 
   /**
@@ -261,11 +272,20 @@ export class CommandsTreeDataProvider implements TreeDataProvider<TreeItem> {
     // Add category items
     for (const [category, categoryCommands] of categorizedCommands.entries()) {
       if (category) {
-        const categoryItem = new TreeItem(category, TreeItemCollapsibleState.Collapsed);
-        categoryItem.iconPath = this.getCategoryIcon(category);
-        categoryItem.contextValue = 'category';
-        categoryItem.tooltip = `${categoryCommands.length} command(s) in ${category}`;
-        items.push(categoryItem);
+        // Apply search/filter if active
+        const filteredCommands = this._searchFilterState.isActive
+          ? filterSavedCommands(categoryCommands, this._searchFilterState)
+          : categoryCommands;
+
+        // Only show category if it has commands after filtering
+        if (!this._searchFilterState.isActive || filteredCommands.length > 0) {
+          const categoryItem = new TreeItem(category, TreeItemCollapsibleState.Collapsed);
+          categoryItem.iconPath = this.getCategoryIcon(category);
+          categoryItem.contextValue = 'category';
+          const commandCount = this._searchFilterState.isActive ? filteredCommands.length : categoryCommands.length;
+          categoryItem.tooltip = `${commandCount} command(s) in ${category}`;
+          items.push(categoryItem);
+        }
       }
     }
 
@@ -357,7 +377,13 @@ export class CommandsTreeDataProvider implements TreeDataProvider<TreeItem> {
   private getCommandsForCategory(category: string): TreeItem[] {
     const commands = this.storage.getAllCommands();
     const categoryCommands = commands.filter(cmd => cmd.category === category);
-    return categoryCommands.map(cmd => this.createCommandItem(cmd, category));
+
+    // Apply search/filter if active
+    const filteredCommands = this._searchFilterState.isActive
+      ? filterSavedCommands(categoryCommands, this._searchFilterState)
+      : categoryCommands;
+
+    return filteredCommands.map(cmd => this.createCommandItem(cmd, category));
   }
 
   /**
@@ -407,7 +433,12 @@ export class CommandsTreeDataProvider implements TreeDataProvider<TreeItem> {
     const commands = this.storage.getAllCommands();
     const favoriteCommands = commands.filter(cmd => cmd.isFavorite);
 
-    if (favoriteCommands.length === 0) {
+    // Apply search/filter if active
+    const filteredCommands = this._searchFilterState.isActive
+      ? filterSavedCommands(favoriteCommands, this._searchFilterState)
+      : favoriteCommands;
+
+    if (filteredCommands.length === 0) {
       const emptyItem = new TreeItem('No favorite commands yet');
       emptyItem.description = 'Add a star to commands to mark them as favorites';
       emptyItem.tooltip = 'Este su favorite commands will appear here';
@@ -415,7 +446,7 @@ export class CommandsTreeDataProvider implements TreeDataProvider<TreeItem> {
       return [emptyItem];
     }
 
-    return favoriteCommands.map(cmd => this.createCommandItem(cmd));
+    return filteredCommands.map(cmd => this.createCommandItem(cmd));
   }
 
   /**
@@ -439,7 +470,12 @@ export class CommandsTreeDataProvider implements TreeDataProvider<TreeItem> {
       .sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0))
       .slice(0, 10);
 
-    if (mostUsed.length === 0) {
+    // Apply search/filter if active
+    const filteredCommands = this._searchFilterState.isActive
+      ? filterSavedCommands(mostUsed, this._searchFilterState)
+      : mostUsed;
+
+    if (filteredCommands.length === 0) {
       const emptyItem = new TreeItem('No most used commands yet');
       emptyItem.description = `Commands run ${mostUsedThreshold}+ times will appear here`;
       emptyItem.tooltip = 'Este su frequently used commands will appear here';
@@ -447,7 +483,7 @@ export class CommandsTreeDataProvider implements TreeDataProvider<TreeItem> {
       return [emptyItem];
     }
 
-    return mostUsed.map(cmd => this.createCommandItem(cmd));
+    return filteredCommands.map(cmd => this.createCommandItem(cmd));
   }
 
   /**
@@ -456,7 +492,12 @@ export class CommandsTreeDataProvider implements TreeDataProvider<TreeItem> {
   private getTrashCommands(): TreeItem[] {
     const deletedCommands = this.storage.getDeletedCommands();
 
-    if (deletedCommands.length === 0) {
+    // Apply search/filter if active
+    const filteredCommands = this._searchFilterState.isActive
+      ? filterSavedCommands(deletedCommands, this._searchFilterState)
+      : deletedCommands;
+
+    if (filteredCommands.length === 0) {
       const emptyItem = new TreeItem('No deleted commands in trash');
       emptyItem.description = 'Deleted commands will appear here for 90 days';
       emptyItem.tooltip = 'Deleted commands can be restored from here';
@@ -464,7 +505,7 @@ export class CommandsTreeDataProvider implements TreeDataProvider<TreeItem> {
       return [emptyItem];
     }
 
-    return deletedCommands.map(cmd => this.createTrashCommandItem(cmd));
+    return filteredCommands.map(cmd => this.createTrashCommandItem(cmd));
   }
 
   /**
@@ -745,5 +786,30 @@ export class CommandsTreeDataProvider implements TreeDataProvider<TreeItem> {
 
     // Default folder icon
     return '$(folder)';
+  }
+
+  /**
+   * Set search/filter state and refresh the tree
+   */
+  public setSearchFilterState(state: SearchFilterState): void {
+    this._searchFilterState = state;
+    saveFilterState(STORAGE_KEYS.MY_COMMANDS_FILTER, state);
+    this._onDidChangeTreeData.fire(undefined);
+  }
+
+  /**
+   * Get current search/filter state
+   */
+  public getSearchFilterState(): SearchFilterState {
+    return { ...this._searchFilterState };
+  }
+
+  /**
+   * Clear search/filter and refresh the tree
+   */
+  public clearSearchFilter(): void {
+    this._searchFilterState = { ...DEFAULT_SEARCH_FILTER_STATE };
+    clearFilterState(STORAGE_KEYS.MY_COMMANDS_FILTER);
+    this._onDidChangeTreeData.fire(undefined);
   }
 }

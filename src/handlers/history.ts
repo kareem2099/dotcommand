@@ -1,6 +1,6 @@
 import { window } from 'vscode';
-import { CommandStorage } from './storage';
-import { CommandsTreeDataProvider } from './treeView';
+import { CommandStorage } from '../storage/storage';
+import { CommandsTreeDataProvider } from '../providers/treeView';
 
 let storage: CommandStorage;
 let treeDataProvider: CommandsTreeDataProvider;

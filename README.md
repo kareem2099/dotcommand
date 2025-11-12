@@ -1,86 +1,139 @@
-# DotCommand - VS Code Extension
+ DotCommand - Command Management Revolution 🧠⚡
 
-Intelligent Command Management with Brain-like Organization 🧠
+Intelligent Command Management with 5 Levels of Access
 
 A powerful VS Code extension that learns your terminal habits, intelligently organizes commands, and provides enterprise-grade command management with 90-day trash recovery.
 
-🔥 Features
+ 🚀 Quick Start (2 minutes to productive)
 
- 🎨 REVOLUTIONARY TASK MANAGER UI - No More JSON Editing! (v1.2.0) 🆕
+1. Install the extension from VS Code Marketplace
+2. Press `Ctrl+Shift+R` for universal command search
+3. Start saving and running commands instantly
 
-✅ Visual Task Creation - Beautiful form-based UI to add npm tasks without coding
-✅ One-Click Operations - Add, edit, run, and delete tasks with visual controls
-✅ Smart Categorization - Automatic organization into Setup, Build, Testing, etc.
-✅ VS Code Integration - Tasks save to standard `.vscode/tasks.json` file
-✅ Real-Time Filtering - Filter tasks by category with visual tags
-✅ Professional UX - VS Code-themed interface matching your editor
+ 🔥 Why DotCommand?
 
-Access it via: `Ctrl+Shift+P` → "DotCommand: Task Manager" or toolbar button
+- ⚡ 5 Levels of Command Access - From status bar to context menus
+- 🧠 Intelligent Suggestions - Learns from your usage patterns
+- 🎯 Universal Fuzzy Search - Find any command instantly
+- ⌨️ 15+ Keyboard Shortcuts - Power-user workflows
+- 📱 Always Available - Access from anywhere in VS Code
 
- 🧠 AI-Powered Command Intelligence (v1.1.0)
-✅ Prepared Commands System - 42+ built-in interactive templates with dynamic parameters
-✅ File Extension Validation - All file operations require proper extensions (.txt, .js, .html, etc.)
-✅ Smart Parameter Prompts - Intelligent input collection with validation
-✅ Multiple Command Trees - Separate "My Commands" and "Prepared Commands" interfaces
+ ⭐ 5 Levels of Command Access
 
- 🏗️ Smart Organization
-✅ Auto-Categorization - Commands automatically sorted into `git-workspace`, `npm-scripts`, `docker-build`, etc.
-✅ Recent & Most Used - Commands promoted to special sections based on usage patterns
-✅ Favorites System - Star important commands for instant access
-✅ 90-Day Trash Bin - Safe deletion with full restore capability
+| Level | Method | Description |
+|-------|--------|-------------|
+| 🎯 1. Direct | Status Bar Buttons | Always-visible Quick Run, Favorites, Recent |
+| ⌨️ 2. Keyboard | 15+ Shortcuts | Power-user shortcuts for instant access |
+| 🔍 3. Search | Quick Command Picker | Universal fuzzy search across all commands |
+| 💡 4. Smart | Intelligent Suggestions | Auto-complete based on usage patterns |
+| 👆 5. Context | Right-click Menus | Access everywhere in VS Code |
 
- ⚡ Powerful Actions
-✅ Double-Click to Run - Execute commands directly from tree view
-✅ Copy to Clipboard - Instant clipboard access with visual feedback
-✅ Terminal Auto-Save - Learns commands from your terminal sessions
-✅ Bulk Operations - Multi-select delete, bulk restore from trash
+ 🧠 Intelligent Features
 
- 🧠 Intelligent Management
-✅ Usage Tracking - Commands automatically promoted to "Most Used" after 5 executions
-✅ Smart Cleanup - Automatic garbage collection while preserving valuable commands
-✅ Context Menus - Right-click actions for all operations
-✅ Rich Tooltips - Comprehensive metadata display with usage stats
+ Smart Organization
+- Auto-Categorization - Commands sorted into `git-workspace`, `npm-scripts`, `docker-build`, etc.
+- Usage-Based Promotion - Commands promoted to "Most Used" after 5 executions
+- Favorites System - Star important commands for instant access
+- 90-Day Trash Recovery - Safe deletion with full restore capability
 
- 🌐 Modern UI
-✅ Tree View Integration - Native VS Code sidebar with smart icons
-✅ Category-Based Folders - Visual grouping with appropriate icons
-✅ Status Indicators - Emoji badges show favorites, auto-saved, etc.
-✅ Web View Support - Rich interface for complex operations
+ AI-Powered Learning
+- Terminal Learning - Automatically captures and categorizes commands
+- Usage Analytics - Tracks patterns and suggests improvements
+- Smart Suggestions - Context-aware command recommendations
+- History Intelligence - Learns from your command execution patterns
+
+ ⚡ Power User Features
+
+ Universal Access
+- Quick Command Picker - `Ctrl+Shift+R` searches everything
+- Status Bar Integration - Always-visible buttons
+- Enhanced Shortcuts - 15+ keyboard combinations
+- Context Menus - Right-click access everywhere
+
+ Advanced Workflows
+- Command Templates - Dynamic commands with variables
+- Template Manager - Visual template creation
+- Batch Operations - Multi-select and bulk actions
+- Terminal Integration - Seamless VS Code terminal support
 
  🎯 Prepared Command Categories (v1.1.0)
 
-# 🚀 Git Commands (6 interactive)
+ 🚀 Git Commands (6 interactive)
 - Create & Switch Branch: `git checkout -b {branch}`
 - Commit with Custom Message: `git commit -m "{message}"`
 - Push to Branch: `git push origin {branch}`
 - Create Tag: `git tag -a {tag} -m "{message}"`
 
-# 📦 NPM Commands (7 interactive)
+ 📦 NPM Commands (7 interactive)
 - Install Package: `npm install {package}`
 - Execute Custom Script: `npm run {script}`
 - Add DevDependency: `npm install --save-dev {package}`
 
-# 🐳 Docker Commands (8 with validation)
+ 🐳 Docker Commands (8 with validation)
 - Build Custom Image: `docker build -t {name} .`
 - Run on Custom Port: `docker run -p {port}:{port} {image}`
 - Execute Shell: `docker exec -it {container} sh`
 
-# ☸️ Kubernetes Commands (6 interactive)
+ ☸️ Kubernetes Commands (6 interactive)
 - Get Pod Logs: `kubectl logs {pod}`
 - Scale Deployment: `kubectl scale deployment {deployment} --replicas={replicas}`
 - Apply Manifest: `kubectl apply -f {manifest}`
 
-# 🐧 Linux Commands (10 with file validation)
-- Copy File: `cp {source} {destination}` *(requires .extension)*
-- Move File: `mv {source} {destination}` *(requires .extension)*
-- View File: `cat {file}` *(requires .extension)*
+ 🐧 Linux Commands (10 with file validation)
+- Copy File: `cp {source} {destination}` (requires .extension)
+- Move File: `mv {source} {destination}` (requires .extension)
+- View File: `cat {file}` (requires .extension)
 - Find Files: `find {directory} -name "{pattern}"`
-- Search Text: `grep "{search}" {file}` *(requires .extension)*
+- Search Text: `grep "{search}" {file}` (requires .extension)
 
-Keyboard Shortcuts
+ ⌨️ Keyboard Shortcuts Reference
 
-- Ctrl+Shift+S (Windows/Linux) or Cmd+Shift+S (Mac) - Save a new command
-- Ctrl+Shift+V (Windows/Linux) or Cmd+Shift+V (Mac) - View and copy commands
+ Global Shortcuts (Work Everywhere)
+- `Ctrl+Shift+R` → Quick Command Picker (universal search)
+- `Ctrl+Shift+1` → Show Favorite Commands
+- `Ctrl+Shift+H` → Show Recent Commands
+- `Ctrl+Shift+Y` → Command History
+- `Ctrl+Shift+A` → Analytics Dashboard
+- `Ctrl+Shift+T` → Template Manager
+- `Ctrl+Shift+M` → Task Manager
+
+ Editor Shortcuts
+- `Ctrl+Shift+S` → Save Command (from selection)
+- `Ctrl+Shift+V` → View Commands
+
+ Tree View Shortcuts (Context-Aware)
+- `Ctrl+Shift+F` → Toggle Favorite (on command items)
+- `Ctrl+Shift+Enter` → Run Command (on command items)
+- `Ctrl+Shift+C` → Copy Command (on command items)
+- `Ctrl+Shift+/` → Search/Filter (in command views)
+- `Ctrl+Shift+X` → Clear Filters (in command views)
+
+ Legacy Shortcuts
+- `Ctrl+Shift+S` (Windows/Linux) or `Cmd+Shift+S` (Mac) - Save a new command
+- `Ctrl+Shift+V` (Windows/Linux) or `Cmd+Shift+V` (Mac) - View and copy commands
+
+ ⚙️ Configuration Options
+
+ Smart Features
+- `dotcommand.suggestions.enabled` → Enable intelligent command suggestions (default: true)
+- `dotcommand.history.enabled` → Track command usage history (default: true)
+- `dotcommand.autoSave.enabled` → Learn commands from terminal (default: true)
+- `dotcommand.suggestions.sortByFrequency` → Sort suggestions by usage (default: true)
+
+ Limits & Storage
+- `dotcommand.general.maxCommands` → Maximum stored commands (default: 1000)
+- `dotcommand.history.maxSize` → History entries to keep (default: 1000)
+- `dotcommand.mostUsedThreshold` → Executions for "Most Used" promotion (default: 5)
+
+ Terminal Management
+- `dotcommand.terminal.cleanup.enabled` → Auto-close inactive terminals (default: true)
+- `dotcommand.terminal.cleanup.timeoutMinutes` → Cleanup timeout (default: 30)
+- `dotcommand.terminal.category.enabled` → Category-based terminal naming (default: true)
+
+ Validation & Safety
+- `dotcommand.testing.enabled` → Enable command validation (default: true)
+- `dotcommand.testing.strictMode` → Prevent saving dangerous commands (default: false)
+- `dotcommand.autoSave.minLength` → Minimum command length to save (default: 2)
 
 VS Code Tasks Integration 🛠️
 
@@ -97,7 +150,7 @@ DotCommand integrates seamlessly with VS Code's built-in task system, allowing y
 
 DotCommand now provides one-click task template generation to bootstrap your project with complete task workflows!
 
-# 🏗️ How to Use
+ 🏗️ How to Use
 
 1. Open "My Commands" sidebar → click the `Create New Task Template` button (📋 icon)
 2. Select project type from 6 templates:
@@ -112,7 +165,7 @@ DotCommand now provides one-click task template generation to bootstrap your pro
 4. Tasks appear in VS Code → Ctrl+Shift+P → "Tasks: Run Task"
 5. Move tasks to personalize → right-click any task → "Move to My Commands"
 
-# 📊 Multi-Template Support
+ 📊 Multi-Template Support
 
 When `.vscode/tasks.json` already exists, DotCommand offers smart merging:
 
@@ -120,7 +173,7 @@ When `.vscode/tasks.json` already exists, DotCommand offers smart merging:
 - Replace all tasks → Full replacement (backup recommended)
 - Cancel → Keep existing setup unchanged
 
-# Example: NPM Project Template (11 tasks)
+ Example: NPM Project Template (11 tasks)
 ```
 📦 NPM Tasks/
 ├── Install Dependencies     npm install
@@ -136,7 +189,7 @@ When `.vscode/tasks.json` already exists, DotCommand offers smart merging:
 └── Update Packages        npm update
 ```
 
-# 🌟 Customization Workflow
+ 🌟 Customization Workflow
 1. Generate template → Get complete task suite instantly
 2. Run tasks → Test and verify functionality via VS Code Tasks panel
 3. Customize → Move tasks to "My Commands" for modification
@@ -218,38 +271,38 @@ Usage
 
  Intelligent Organization
 
-# 🌟 Smart Sections
+ 🌟 Smart Sections
 - ⭐ Favorites - Starred commands for instant access
 - 🕒 Recent - Last 10 executed commands
 - 🗑️ Trash - Deleted commands (90-day restoration window)
 
-# 📂 Auto-Categories
+ 📂 Auto-Categories
 Commands are automatically categorized based on keywords:
 - `git-workspace` → `git status`, `git add .`, `git diff`
 - `npm-scripts` → `npm run dev`, `npm run build`
 - `docker-build` → `docker build`, `docker-compose up`
 - `k8s-deploy` → `kubectl apply`, `helm install`
 
-# 🎯 Usage-Based Promotion
+ 🎯 Usage-Based Promotion
 - Commands used 5+ times automatically move to "Most Used" category
 - Commands used in last 30 days appear in Recent section
 - Favorites always preserved during cleanup operations
 
  💡 Advanced Features
 
-# 🗑️ Trash Bin Recovery
+ 🗑️ Trash Bin Recovery
 - Deleted commands go to trash (not permanently lost)
 - 90-day recovery window - restore anytime
 - Auto-cleanup removes trash after 90 days
 - Visual indicators show deletion time
 
-# 🤖 Terminal Learning
+ 🤖 Terminal Learning
 - Automatically captures meaningful terminal commands
 - Filters out navigation commands (`cd`, `ls`, `pwd`)
 - Categorizes and organizes new commands instantly
 - Silent operation with optional notifications
 
-# ⚙️ Configuration Options
+ ⚙️ Configuration Options
 ```json
 {
   "dotcommand.general.maxCommands": 1000,
@@ -264,23 +317,23 @@ Examples
 Here are some example commands you might want to save:
 
 ```
-# Package management
+ Package management
 npm install lodash
 npm run dev
 npm run build
 
-# Git operations
+ Git operations
 git add .
 git commit -m "feat: add new feature"
 git push origin main
 
-# Docker commands
+ Docker commands
 docker build -t myapp .
 docker run -p 3000:3000 myapp
 docker-compose up
 
-# File operations
-find . -name "*.ts" -type f
+ File operations
+find . -name ".ts" -type f
 grep -r "TODO" src/
 ```
 
@@ -296,24 +349,24 @@ Development
 
 ```
 src/
-├── extension.ts          # 🎯 Main entry point (194 lines - clean & organized)
-├── commandDetection.ts   # 🧠 Smart categorization logic
-├── commandCleaning.ts    # 🧹 Terminal prompt cleaning utilities
-├── commandHandlers.ts    # ⚡ User action handlers (save, run, delete, etc.)
-├── historyHandlers.ts    # 📚 Terminal history import functionality
-├── trashHandlers.ts      # 🗑️ 90-day trash bin management
-├── viewHandlers.ts       # 🎨 View/UI management utilities
-├── treeView.ts          # 🌳 Enhanced tree view with smart features (350+ lines)
-├── storage.ts           # 💾 Data persistence with intelligent cleanup
-├── types.ts             # 📝 TypeScript interfaces & definitions
-└── webview.ts          # 🌐 Rich web interface components
+├── extension.ts           🎯 Main entry point (194 lines - clean & organized)
+├── commandDetection.ts    🧠 Smart categorization logic
+├── commandCleaning.ts     🧹 Terminal prompt cleaning utilities
+├── commandHandlers.ts     ⚡ User action handlers (save, run, delete, etc.)
+├── historyHandlers.ts     📚 Terminal history import functionality
+├── trashHandlers.ts       🗑️ 90-day trash bin management
+├── viewHandlers.ts        🎨 View/UI management utilities
+├── treeView.ts           🌳 Enhanced tree view with smart features (350+ lines)
+├── storage.ts            💾 Data persistence with intelligent cleanup
+├── types.ts              📝 TypeScript interfaces & definitions
+└── webview.ts           🌐 Rich web interface components
 ```
 
  Building
 
 ```bash
-npm install    # Install dependencies
-npm run compile # Compile TypeScript to JavaScript
+npm install     Install dependencies
+npm run compile  Compile TypeScript to JavaScript
 ```
 
  Publishing

@@ -1,10 +1,17 @@
 import { ExtensionContext } from 'vscode';
-import { SavedCommand, CommandInput } from './types';
+import { SavedCommand, CommandInput } from '../utils/types';
 
 export class CommandStorage {
   private static readonly STORAGE_KEY = 'dotcommand.savedCommands';
 
   constructor(private context: ExtensionContext) {}
+
+  /**
+   * Get the extension context
+   */
+  getContext(): ExtensionContext {
+    return this.context;
+  }
 
   /**
    * Save a new command to storage

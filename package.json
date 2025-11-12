@@ -3,7 +3,7 @@
   "displayName": "DotCommand - Command Manager",
   "publisher": "freerave",
   "description": "Save, view, copy, and manage your frequently used commands in VS Code",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "icon": "assets/icons/icon.png",
   "keywords": [
     "commands",
@@ -22,10 +22,6 @@
   },
   "categories": [
     "Other"
-  ],
-  "activationEvents": [
-    "onCommand:dotcommand.saveCommand",
-    "onCommand:dotcommand.viewCommands"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -78,6 +74,104 @@
           "type": "boolean",
           "default": false,
           "description": "Enable strict mode - prevent saving commands with warnings/dangers"
+        },
+        "dotcommand.promptRegex.zsh": {
+          "type": "string",
+          "default": null,
+          "description": "Custom regex to remove Zsh prompt. Example: '^.*%\\s+'"
+        },
+        "dotcommand.promptRegex.bash": {
+          "type": "string",
+          "default": null,
+          "description": "Custom regex to remove Bash prompt. Example: '^.*\\$\\s+'"
+        },
+        "dotcommand.promptRegex.powershell": {
+          "type": "string",
+          "default": null,
+          "description": "Custom regex to remove PowerShell prompt. Example: '^.*(PS\\s+.*?>\\s*)'"
+        },
+        "dotcommand.promptRegex.cmd": {
+          "type": "string",
+          "default": null,
+          "description": "Custom regex to remove CMD prompt. Example: '^.*(>)'"
+        },
+        "dotcommand.promptRegex.fish": {
+          "type": "string",
+          "default": null,
+          "description": "Custom regex to remove Fish prompt. Example: '^.*(>\\s*)'"
+        },
+        "dotcommand.terminal.cleanup.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable automatic cleanup of inactive DotCommand terminals"
+        },
+        "dotcommand.terminal.cleanup.timeoutMinutes": {
+          "type": "number",
+          "default": 30,
+          "minimum": 5,
+          "maximum": 480,
+          "description": "Time in minutes before inactive terminals are automatically closed"
+        },
+        "dotcommand.terminal.category.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable category-based terminal naming (e.g., DotCommand-Git, DotCommand-NPM)"
+        },
+        "dotcommand.history.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable global command history tracking"
+        },
+        "dotcommand.history.maxSize": {
+          "type": "number",
+          "default": 1000,
+          "minimum": 100,
+          "maximum": 10000,
+          "description": "Maximum number of commands to keep in history"
+        },
+        "dotcommand.history.showSuggestions": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show command suggestions based on history when typing"
+        },
+        "dotcommand.suggestions.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable intelligent command suggestions in terminal"
+        },
+        "dotcommand.suggestions.maxSuggestions": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum number of suggestions to show"
+        },
+        "dotcommand.suggestions.minPrefixLength": {
+          "type": "number",
+          "default": 2,
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Minimum characters before showing suggestions"
+        },
+        "dotcommand.suggestions.includeSavedCommands": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include saved commands in suggestions"
+        },
+        "dotcommand.suggestions.includePreparedCommands": {
+          "type": "boolean",
+          "default": false,
+          "description": "Include prepared commands in suggestions"
+        },
+        "dotcommand.suggestions.includeTemplates": {
+          "type": "boolean",
+          "default": false,
+          "description": "Include command templates in suggestions"
+        },
+        "dotcommand.suggestions.sortByFrequency": {
+          "type": "boolean",
+          "default": true,
+          "description": "Sort suggestions by usage frequency"
         }
       }
     },
@@ -181,6 +275,81 @@
         "command": "dotcommand.viewTrash",
         "title": "View Trash",
         "icon": "$(trash)"
+      },
+      {
+        "command": "dotcommand.searchPreparedCommands",
+        "title": "Search & Filter Prepared Commands",
+        "icon": "$(search)"
+      },
+      {
+        "command": "dotcommand.searchMyCommands",
+        "title": "Search & Filter My Commands",
+        "icon": "$(search)"
+      },
+      {
+        "command": "dotcommand.clearPreparedFilters",
+        "title": "Clear Filters",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "dotcommand.clearMyCommandsFilters",
+        "title": "Clear Filters",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "dotcommand.showCommandHistory",
+        "title": "Show Command History",
+        "icon": "$(history)"
+      },
+      {
+        "command": "dotcommand.searchCommandHistory",
+        "title": "Search Command History",
+        "icon": "$(search)"
+      },
+      {
+        "command": "dotcommand.showCommandHistoryStats",
+        "title": "Show History Statistics",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "dotcommand.showCommandTemplates",
+        "title": "Show Command Templates",
+        "icon": "$(library)"
+      },
+      {
+        "command": "dotcommand.createCommandTemplate",
+        "title": "Create Command Template",
+        "icon": "$(add)"
+      },
+      {
+        "command": "dotcommand.executeCommandTemplate",
+        "title": "Execute Command Template",
+        "icon": "$(play)"
+      },
+      {
+        "command": "dotcommand.templateManager",
+        "title": "Template Manager (UI)",
+        "icon": "$(library)"
+      },
+      {
+        "command": "dotcommand.quickCommandPicker",
+        "title": "Quick Run Command",
+        "icon": "$(search)"
+      },
+      {
+        "command": "dotcommand.showFavorites",
+        "title": "Show Favorite Commands",
+        "icon": "$(star)"
+      },
+      {
+        "command": "dotcommand.showRecentCommands",
+        "title": "Show Recent Commands",
+        "icon": "$(history)"
+      },
+      {
+        "command": "dotcommand.triggerSuggestions",
+        "title": "Trigger Command Suggestions (Test)",
+        "icon": "$(lightbulb)"
       }
     ],
     "keybindings": [
@@ -194,21 +363,101 @@
         "command": "dotcommand.viewCommands",
         "key": "ctrl+shift+v",
         "mac": "cmd+shift+v"
+      },
+      {
+        "command": "dotcommand.viewTrash",
+        "key": "ctrl+shift+t",
+        "mac": "cmd+shift+t"
+      },
+      {
+        "command": "dotcommand.toggleFavorite",
+        "key": "ctrl+shift+f",
+        "mac": "cmd+shift+f",
+        "when": "viewItem == commandItem"
+      },
+      {
+        "command": "dotcommand.runCommandFromTree",
+        "key": "ctrl+shift+enter",
+        "mac": "cmd+shift+enter",
+        "when": "viewItem == commandItem"
+      },
+      {
+        "command": "dotcommand.copyCommandFromTree",
+        "key": "ctrl+shift+c",
+        "mac": "cmd+shift+c",
+        "when": "viewItem == commandItem"
+      },
+      {
+        "command": "dotcommand.searchMyCommands",
+        "key": "ctrl+shift+/",
+        "mac": "cmd+shift+/",
+        "when": "view == dotcommand.commandsView"
+      },
+      {
+        "command": "dotcommand.searchPreparedCommands",
+        "key": "ctrl+shift+/",
+        "mac": "cmd+shift+/",
+        "when": "view == dotcommand.preparedView"
+      },
+      {
+        "command": "dotcommand.clearMyCommandsFilters",
+        "key": "ctrl+shift+x",
+        "mac": "cmd+shift+x",
+        "when": "view == dotcommand.commandsView"
+      },
+      {
+        "command": "dotcommand.clearPreparedFilters",
+        "key": "ctrl+shift+x",
+        "mac": "cmd+shift+x",
+        "when": "view == dotcommand.preparedView"
+      },
+      {
+        "command": "dotcommand.quickCommandPicker",
+        "key": "ctrl+shift+r",
+        "mac": "cmd+shift+r"
+      },
+      {
+        "command": "dotcommand.showFavorites",
+        "key": "ctrl+shift+1",
+        "mac": "cmd+shift+1",
+        "when": "!editorTextFocus"
+      },
+      {
+        "command": "dotcommand.showRecentCommands",
+        "key": "ctrl+shift+h",
+        "mac": "cmd+shift+h",
+        "when": "!editorTextFocus"
+      },
+      {
+        "command": "dotcommand.showCommandHistory",
+        "key": "ctrl+shift+y",
+        "mac": "cmd+shift+y"
+      },
+      {
+        "command": "dotcommand.showAnalytics",
+        "key": "ctrl+shift+a",
+        "mac": "cmd+shift+a",
+        "when": "!editorTextFocus"
+      },
+      {
+        "command": "dotcommand.templateManager",
+        "key": "ctrl+shift+t",
+        "mac": "cmd+shift+t",
+        "when": "!editorTextFocus"
+      },
+      {
+        "command": "dotcommand.taskManager",
+        "key": "ctrl+shift+m",
+        "mac": "cmd+shift+m"
+      },
+      {
+        "command": "dotcommand.viewTrash",
+        "key": "ctrl+shift+d",
+        "mac": "cmd+shift+d",
+        "when": "!editorTextFocus"
       }
     ],
     "menus": {
-      "editor/context": [
-        {
-          "command": "dotcommand.saveCommand",
-          "when": "editorTextFocus",
-          "group": "navigation"
-        },
-        {
-          "command": "dotcommand.testCommand",
-          "when": "editorTextFocus",
-          "group": "navigation"
-        }
-      ],
       "view/title": [
         {
           "command": "dotcommand.saveCommand",
@@ -238,6 +487,26 @@
         {
           "command": "dotcommand.viewTrash",
           "when": "view == dotcommand.commandsView",
+          "group": "navigation"
+        },
+        {
+          "command": "dotcommand.searchMyCommands",
+          "when": "view == dotcommand.commandsView",
+          "group": "navigation"
+        },
+        {
+          "command": "dotcommand.clearMyCommandsFilters",
+          "when": "view == dotcommand.commandsView",
+          "group": "navigation"
+        },
+        {
+          "command": "dotcommand.searchPreparedCommands",
+          "when": "view == dotcommand.preparedView",
+          "group": "navigation"
+        },
+        {
+          "command": "dotcommand.clearPreparedFilters",
+          "when": "view == dotcommand.preparedView",
           "group": "navigation"
         }
       ],
@@ -281,6 +550,64 @@
           "command": "dotcommand.moveToMyCommands",
           "when": "view == dotcommand.preparedView && viewItem == userPreparedTaskItem",
           "group": "7_modification@2"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "dotcommand.saveCommand",
+          "when": "editorTextFocus",
+          "group": "7_modification@1"
+        },
+        {
+          "command": "dotcommand.testCommand",
+          "when": "editorTextFocus",
+          "group": "7_modification@2"
+        },
+        {
+          "command": "dotcommand.quickCommandPicker",
+          "when": "editorTextFocus",
+          "group": "navigation@1"
+        }
+      ],
+      "terminal/context": [
+        {
+          "command": "dotcommand.saveCommand",
+          "group": "7_modification@1"
+        },
+        {
+          "command": "dotcommand.quickCommandPicker",
+          "group": "navigation@1"
+        },
+        {
+          "command": "dotcommand.showCommandHistory",
+          "group": "navigation@2"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "dotcommand.quickCommandPicker",
+          "group": "7_modification@1"
+        },
+        {
+          "command": "dotcommand.showCommandHistory",
+          "group": "navigation@1"
+        }
+      ],
+      "statusBar/context": [
+        {
+          "command": "dotcommand.quickCommandPicker",
+          "when": "statusBarItem == dotcommand.quickRun",
+          "group": "navigation@1"
+        },
+        {
+          "command": "dotcommand.showFavorites",
+          "when": "statusBarItem == dotcommand.favorites",
+          "group": "navigation@1"
+        },
+        {
+          "command": "dotcommand.showRecentCommands",
+          "when": "statusBarItem == dotcommand.recent",
+          "group": "navigation@1"
         }
       ]
     }

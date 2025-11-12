@@ -1,4 +1,4 @@
-import { workspace, window } from 'vscode';
+
 
 /**
  * Command validation result levels
@@ -257,7 +257,7 @@ export class CommandValidator {
   /**
    * Check for duplicate command names
    */
-  private static checkDuplicateName(name: string): ValidationCheck {
+  private static checkDuplicateName(_name: string): ValidationCheck {
     // This would need access to storage to check existing names
     // For now, just return a safe check
     // In implementation, this would query the storage
@@ -315,7 +315,6 @@ export class CommandValidator {
   private static generateRecommendations(checks: ValidationCheck[], command: string): string[] {
     const recommendations: string[] = [];
 
-    const failedChecks = checks.filter(check => !check.passed);
     const warnings = checks.filter(check => check.level === ValidationLevel.WARNING);
     const dangers = checks.filter(check => check.level === ValidationLevel.DANGEROUS);
 

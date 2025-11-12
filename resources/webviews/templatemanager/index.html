@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DotCommand - Template Manager</title>
+    <link rel="stylesheet" href="../../styles/styles.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="template-manager">
+        <div class="header">
+            <h1>📋 Template Manager</h1>
+            <div class="actions">
+                <button class="btn" id="refreshBtn">🔄 Refresh</button>
+                <button class="btn primary" id="createBtn">➕ Create Template</button>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <span class="stat-value" id="totalTemplates">0</span>
+                <span class="stat-label">Total Templates</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="userTemplates">0</span>
+                <span class="stat-label">My Templates</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="predefinedTemplates">0</span>
+                <span class="stat-label">Predefined</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="totalUsage">0</span>
+                <span class="stat-label">Total Usage</span>
+            </div>
+        </div>
+
+        <div class="search-container">
+            <input type="text" class="search-input" id="searchInput" placeholder="Search templates...">
+        </div>
+
+        <div class="categories" id="categories">
+            <!-- Categories will be populated by JavaScript -->
+        </div>
+
+        <div id="templatesContainer">
+            <!-- Templates will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Create/Edit Template Modal -->
+    <div class="modal" id="templateModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Create Template</h2>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+
+            <form id="templateForm">
+                <div class="form-group">
+                    <label class="form-label" for="templateName">Template Name *</label>
+                    <input type="text" class="form-input" id="templateName" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="templateDescription">Description *</label>
+                    <textarea class="form-input form-textarea" id="templateDescription" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="templateCommand">Command Template *</label>
+                    <textarea class="form-input form-textarea" id="templateCommand"
+                        placeholder="Use {variable_name} for dynamic values" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="templateCategory">Category</label>
+                    <input type="text" class="form-input" id="templateCategory" placeholder="e.g., Git, Docker, Custom">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Variables</label>
+                    <div class="variables-list" id="variablesList">
+                        <!-- Variables will be populated here -->
+                    </div>
+                    <button type="button" class="btn add-variable" id="addVariableBtn">➕ Add Variable</button>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn primary" id="saveTemplateBtn">Save Template</button>
+                    <button type="button" class="btn" id="cancelBtn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

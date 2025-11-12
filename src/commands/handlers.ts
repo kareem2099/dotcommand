@@ -1,12 +1,33 @@
-import { commands, window, workspace, TerminalShellExecutionStartEvent, env } from 'vscode';
-import { CommandStorage } from './storage';
-import { CommandsTreeDataProvider } from './treeView';
-import { handlePreparedCommand } from './preparedCommands';
-import { CommandInput } from './types';
-import { detectCommandCategory } from './commandDetection';
-import { cleanTerminalCommand } from './commandCleaning';
-import { CommandValidator } from './commandValidator';
-import { CommandTestWebview } from './testWebview';
+import { commands, window, workspace, TerminalShellExecutionStartEvent, env, TreeItem } from 'vscode';
+import { CommandStorage } from '../storage/storage';
+import { CommandsTreeDataProvider } from '../providers/treeView';
+import { handlePreparedCommand, PreparedCommand } from '../commands/prepared';
+import { CommandInput } from '../utils/types';
+import { detectCommandCategory } from '../commands/detection';
+import { cleanTerminalCommand } from '../commands/cleaning';
+import { CommandValidator } from '../commands/validator';
+import { CommandTestWebview } from '../webviews/test';
+import { DotCommandTask } from '../providers/taskProvider';
+import { getTerminalManager } from '../utils/terminalManager';
+import { getCommandHistoryManager } from '../utils/commandHistory';
+import { getTemplateManager, CommandTemplate, TemplateVariable } from '../utils/commandTemplates';
+
+// Type definitions for better type safety
+interface WebviewMessage {
+  type: 'save' | 'edit' | 'cancel';
+}
+
+interface TaskTemplate {
+  version: string;
+  preparedTasks: PreparedTask[];
+}
+
+interface PreparedTask {
+  label: string;
+  command: string;
+  description: string;
+  category: string;
+}
 
 let storage: CommandStorage;
 let treeDataProvider: CommandsTreeDataProvider;
@@ -83,7 +104,7 @@ export async function handleSaveCommand(): Promise<void> {
       const testWebview = CommandTestWebview.getInstance();
 
       // Set up message handler for webview actions
-      testWebview.setMessageHandler(async (message: any) => {
+      testWebview.setMessageHandler(async (message: WebviewMessage) => {
         switch (message.type) {
           case 'save':
             // Proceed to save the command
@@ -120,7 +141,8 @@ export async function handleSaveCommand(): Promise<void> {
 /**
  * Handle copying command from tree view
  */
-export async function handleCopyCommandFromTree(item: any): Promise<void> {
+export async function handleCopyCommandFromTree(item: TreeItem): Promise<void> {
+  if (!item.id) return;
   const command = treeDataProvider.getCommandById(item.id);
   if (command) {
     await env.clipboard.writeText(command.command);
@@ -131,7 +153,8 @@ export async function handleCopyCommandFromTree(item: any): Promise<void> {
 /**
  * Handle running command from tree view (with confirmation)
  */
-export async function handleRunCommandFromTree(item: any): Promise<void> {
+export async function handleRunCommandFromTree(item: TreeItem): Promise<void> {
+  if (!item.id) return;
   const command = treeDataProvider.getCommandById(item.id);
   if (!command) return;
 
@@ -144,14 +167,21 @@ export async function handleRunCommandFromTree(item: any): Promise<void> {
   );
 
   if (confirm === 'Yes, Run') {
-    // Get existing terminal or create new one
-    let terminal = window.activeTerminal || window.terminals[0];
-    if (!terminal) {
-      terminal = window.createTerminal('DotCommand');
-    }
+    // Get terminal for this command using TerminalManager
+    const terminalManager = getTerminalManager();
+    const terminal = terminalManager.getOrCreateTerminal(command.command, storage.getContext());
 
-    // Show the terminal and wait for it to be ready
-    terminal.show();
+    // Track command execution
+    const terminalName = terminal.name;
+    terminalManager.trackCommand(terminalName, command.command);
+
+    // Track in global command history
+    const historyManager = getCommandHistoryManager();
+    await historyManager.trackCommand(command.command, 'saved', terminalName, command.category);
+
+    // Ensure terminal panel is visible and focus the terminal
+    await commands.executeCommand('workbench.action.terminal.focus');
+    terminal.show(true); // true parameter focuses the terminal
 
     // Wait for terminal to be ready, then send command
     setTimeout(() => {
@@ -164,7 +194,8 @@ export async function handleRunCommandFromTree(item: any): Promise<void> {
 /**
  * Handle deleting command from tree view (soft delete to trash)
  */
-export async function handleDeleteCommandFromTree(item: any): Promise<void> {
+export async function handleDeleteCommandFromTree(item: TreeItem): Promise<void> {
+  if (!item.id) return;
   const command = treeDataProvider.getCommandById(item.id);
   if (!command) return;
 
@@ -192,7 +223,8 @@ This command can be restored within 90 days.`,
 /**
  * Handle toggling favorite status
  */
-export async function handleToggleFavorite(item: any): Promise<void> {
+export async function handleToggleFavorite(item: TreeItem): Promise<void> {
+  if (!item.id) return;
   const command = treeDataProvider.getCommandById(item.id);
   if (!command) return;
 
@@ -202,26 +234,37 @@ export async function handleToggleFavorite(item: any): Promise<void> {
   treeDataProvider.refresh();
 
   const statusText = newFavoriteStatus ? 'added to favorites' : 'removed from favorites';
-  window.showInformationMessage(`Command ${statusText}`);
+  const commandDisplay = command.name || command.command.substring(0, 30) + (command.command.length > 30 ? '...' : '');
+  window.showInformationMessage(`⭐ Command "${commandDisplay}" ${statusText}`);
+
+  // Show favorites statistics if added to favorites
+  if (newFavoriteStatus) {
+    const allCommands = storage.getAllCommands();
+    const favoriteCount = allCommands.filter(cmd => cmd.isFavorite).length;
+    if (favoriteCount > 0) {
+      window.showInformationMessage(`You now have ${favoriteCount} favorite command(s). Use Ctrl+Shift+F to toggle favorites quickly.`);
+    }
+  }
 }
 
 /**
  * Legacy handler - delegate to new prepared commands system
  */
 export async function handleRunPreparedCommand(commandString: string): Promise<void> {
-  return handlePreparedCommand(commandString);
+  return handlePreparedCommand(commandString, storage.getContext());
 }
 
 /**
  * Handle running command and tracking usage
  */
-export async function handleRunAndTrackCommand(item: any): Promise<void> {
+export async function handleRunAndTrackCommand(item: TreeItem): Promise<void> {
+  if (!item.id) return;
   const command = treeDataProvider.getCommandById(item.id);
   if (!command) return;
 
   // Update usage statistics
   const usageCount = (command.usageCount || 0) + 1;
-  const updates: any = {
+  const updates: Partial<CommandInput> = {
     usageCount: usageCount,
     lastUsed: Date.now()
   };
@@ -273,7 +316,7 @@ export async function handleTerminalCommand(event: TerminalShellExecutionStartEv
       commandText = commandLineValue;
     } else if (commandLineValue && typeof commandLineValue === 'object') {
       // Handle object format with value property
-      commandText = (commandLineValue as any).value || '';
+      commandText = (commandLineValue as { value?: string }).value || '';
     }
 
     console.log('Raw command line:', commandText);
@@ -292,7 +335,9 @@ export async function handleTerminalCommand(event: TerminalShellExecutionStartEv
     }
 
     // Extract the actual command (remove shell prompt and arguments)
-    const cleanedCommand = cleanTerminalCommand(commandLine);
+    const { getActiveShellType } = await import('../commands/cleaning');
+    const shellType = getActiveShellType();
+    const cleanedCommand = cleanTerminalCommand(commandLine, shellType);
     console.log('Cleaned command:', cleanedCommand);
 
     // Get minimum length from configuration
@@ -326,7 +371,7 @@ export async function handleTerminalCommand(event: TerminalShellExecutionStartEv
     // Auto-save the command
     try {
       console.log('Attempting to save command:', cleanedCommand, 'Category:', detectedCategory);
-      const savedCommand = await storage.saveCommand({
+      await storage.saveCommand({
         command: cleanedCommand,
         category: detectedCategory,
         source: 'auto-terminal'
@@ -366,14 +411,22 @@ export async function handleTerminalCommand(event: TerminalShellExecutionStartEv
 /**
  * Handle adding a prepared command to user's "My Commands" section
  */
-export async function handleAddToMyCommands(item: any): Promise<void> {
+export async function handleAddToMyCommands(item: TreeItem): Promise<void> {
   try {
     // Find the prepared command by looking up in preparedCommands.ts
-    const preparedCommands = require('./preparedCommands').PREPARED_COMMANDS;
-    const preparedCommand = preparedCommands.find((cmd: any) =>
-      cmd.name === item?.label ||
-      cmd.command === (item?.description || item?.command)
-    );
+    const { getPreparedCommandsForCategory, getPreparedCommandCategories } = await import('../commands/prepared');
+    const allCategories = getPreparedCommandCategories();
+    let preparedCommand: PreparedCommand | undefined = undefined;
+
+    // Search through all categories to find the command
+    for (const category of allCategories) {
+      const commands = getPreparedCommandsForCategory(category);
+      preparedCommand = commands.find((cmd: PreparedCommand) =>
+        cmd.name === item?.label ||
+        cmd.command === (item?.description || item?.command)
+      );
+      if (preparedCommand) break;
+    }
 
     if (!preparedCommand) {
       window.showErrorMessage('Could not find the prepared command to add');
@@ -401,13 +454,13 @@ export async function handleAddToMyCommands(item: any): Promise<void> {
     }
 
     // Save as user command
-    const savedCommand = await storage.saveCommand(commandData);
+    await storage.saveCommand(commandData);
 
     // Refresh the tree view to show the new command
     treeDataProvider.refresh();
 
     // Show success message
-    const displayName = savedCommand.name || savedCommand.command.substring(0, 50) + (savedCommand.command.length > 50 ? '...' : '');
+    const displayName = preparedCommand.name || preparedCommand.command.substring(0, 50) + (preparedCommand.command.length > 50 ? '...' : '');
     window.showInformationMessage(`Added to My Commands: ${displayName}`);
 
   } catch (error) {
@@ -419,34 +472,33 @@ export async function handleAddToMyCommands(item: any): Promise<void> {
 /**
  * Handle moving a user-prepared task (from tasks.dotcommand) to user's "My Commands" section
  */
-export async function handleMoveToMyCommands(item: any): Promise<void> {
+export async function handleMoveToMyCommands(item: TreeItem | { task?: DotCommandTask; label?: string; title?: string; description?: string; command?: string; id?: string }): Promise<void> {
   try {
     // The item should contain task data from the tasks.dotcommand file
     let taskLabel = '';
     let taskCommand = '';
-    let taskDescription = '';
     let taskCategory = '';
 
     // Extract task information from different possible formats
     if (typeof item === 'object' && item !== null) {
-      if (item.task) {
+      // Check if it's our custom object type with task property
+      const customItem = item as { task?: DotCommandTask; label?: string; title?: string; description?: string; command?: string; id?: string };
+      if (customItem.task) {
         // Task object directly provided
-        const task = item.task;
+        const task = customItem.task;
         taskLabel = task.label || task.name || '';
         taskCommand = task.command;
-        taskDescription = task.description || '';
         taskCategory = task.category || '';
       } else {
         // Task data from tree item
-        taskLabel = item.label || item.title || '';
-        taskCommand = item.description || item.command || '';
-        taskDescription = item.tooltip || '';
+        taskLabel = (typeof item.label === 'string' ? item.label : '') || (customItem.title || '');
+        taskCommand = (typeof item.description === 'string' ? item.description : '') || (customItem.command || '');
         // Extract category from ID or context
         if (item.id && item.id.includes('_task_')) {
           // This is a user-prepared task - we need to look up category
-          const { readTasksDotCommand } = require('./taskProvider');
+          const { readTasksDotCommand } = await import('../providers/taskProvider');
           const userTasks = await readTasksDotCommand();
-          const matchingTask = userTasks.find((t: any) => t.label === taskLabel && t.command === taskCommand);
+          const matchingTask = userTasks.find((t: DotCommandTask) => t.label === taskLabel && t.command === taskCommand);
           if (matchingTask) {
             taskCategory = matchingTask.category || '';
           }
@@ -480,13 +532,13 @@ export async function handleMoveToMyCommands(item: any): Promise<void> {
     }
 
     // Save as user command
-    const savedCommand = await storage.saveCommand(commandData);
+    await storage.saveCommand(commandData);
 
     // Refresh the tree view to show the new command
     treeDataProvider.refresh();
 
     // Show success message
-    const displayName = savedCommand.name || savedCommand.command.substring(0, 50) + (savedCommand.command.length > 50 ? '...' : '');
+    const displayName = taskLabel || taskCommand.substring(0, 50) + (taskCommand.length > 50 ? '...' : '');
     window.showInformationMessage(`Moved to My Commands: ${displayName}`);
 
   } catch (error) {
@@ -622,12 +674,14 @@ export async function handleCreateNewTaskTemplate(): Promise<void> {
     await workspace.fs.writeFile(tasksUri, new TextEncoder().encode(tasksJson));
 
     // Automatically add all new tasks to My Commands (only the newly added ones)
-    const newTasksOnly = existingTasks
-      ? finalTasksData.preparedTasks.slice(existingTasks.preparedTasks.length)
-      : finalTasksData.preparedTasks;
+    if (finalTasksData) {
+      const newTasksOnly = existingTasks
+        ? finalTasksData.preparedTasks.slice(existingTasks.preparedTasks.length)
+        : finalTasksData.preparedTasks;
 
-    if (newTasksOnly.length > 0) {
-      await autoAddTasksToMyCommands(newTasksOnly);
+      if (newTasksOnly.length > 0) {
+        await autoAddTasksToMyCommands(newTasksOnly);
+      }
     }
 
     // Refresh views to show new tasks
@@ -644,10 +698,10 @@ export async function handleCreateNewTaskTemplate(): Promise<void> {
 /**
  * Generate task template based on project type
  */
-async function generateTaskTemplate(templateType: string): Promise<any> {
-  const baseTasks = {
+async function generateTaskTemplate(templateType: string): Promise<TaskTemplate> {
+  const baseTasks: TaskTemplate = {
     version: "1.0.0",
-    preparedTasks: [] as any[]
+    preparedTasks: []
   };
 
   switch (templateType) {
@@ -744,13 +798,14 @@ async function generateTaskTemplate(templateType: string): Promise<any> {
 /**
  * Handle testing a command before saving or from tree
  */
-export async function handleTestCommand(treeItem?: any): Promise<void> {
+export async function handleTestCommand(treeItem?: TreeItem): Promise<void> {
   try {
     let commandToTest = '';
     let nameToShow = '';
 
     // If called from tree item context menu
     if (treeItem) {
+      if (!treeItem.id) return;
       const command = treeDataProvider.getCommandById(treeItem.id);
       if (command) {
         commandToTest = command.command;
@@ -791,13 +846,13 @@ export async function handleTestCommand(treeItem?: any): Promise<void> {
     }
 
     // Validate the command
-    const validationResult = await CommandValidator.validateCommand(commandToTest, nameToShow || undefined);
+    const validationResult = await CommandValidator.validateCommand(commandToTest, nameToShow || "");
 
     // Show test results in webview
     const testWebview = CommandTestWebview.getInstance();
 
     // Set up message handler for webview actions - different behavior for tree vs save
-    testWebview.setMessageHandler(async (message: any) => {
+    testWebview.setMessageHandler(async (message: WebviewMessage) => {
       switch (message.type) {
         case 'save':
           if (treeItem) {
@@ -830,12 +885,12 @@ export async function handleTestCommand(treeItem?: any): Promise<void> {
     });
 
     // Show the validation results
-    await testWebview.showTestResults(commandToTest, validationResult, nameToShow?.trim());
+    await testWebview.showTestResults(commandToTest, validationResult, nameToShow?.trim() || "");
 
     // Update button text for tree item testing
     if (treeItem) {
       // Use a custom message handler to show different buttons for analysis vs saving
-      testWebview.setMessageHandler(async (message: any) => {
+      testWebview.setMessageHandler(async (message: WebviewMessage) => {
         switch (message.type) {
           case 'save':
             testWebview.dispose();
@@ -873,7 +928,7 @@ async function proceedWithSave(command: string, name?: string): Promise<void> {
     // Auto-detect category based on command content
     let autoCategory = categoryInput?.trim();
     if (!autoCategory) {
-      const { detectCommandCategory } = require('./commandDetection');
+      const { detectCommandCategory } = await import('../commands/detection');
       autoCategory = detectCommandCategory(command.trim().toLowerCase());
     }
 
@@ -898,14 +953,13 @@ async function proceedWithSave(command: string, name?: string): Promise<void> {
     }
 
     // Save the command
-    const savedCommand = await storage.saveCommand(commandData);
+    await storage.saveCommand(commandData);
 
     // Refresh the tree view to show the new command
     treeDataProvider.refresh();
 
     // Show success message
-    const displayName = savedCommand.name || savedCommand.command.substring(0, 50) + (savedCommand.command.length > 50 ? '...' : '');
-    window.showInformationMessage(`Command saved: ${displayName}`);
+    window.showInformationMessage(`Command saved successfully`);
 
   } catch (error) {
     console.error('Error saving command:', error);
@@ -914,9 +968,686 @@ async function proceedWithSave(command: string, name?: string): Promise<void> {
 }
 
 /**
+ * Handle showing command history
+ */
+export async function handleShowCommandHistory(): Promise<void> {
+  try {
+    const historyManager = getCommandHistoryManager();
+    const history = historyManager.getRecentCommands(20);
+
+    if (history.length === 0) {
+      window.showInformationMessage('No command history available yet. Run some commands first!');
+      return;
+    }
+
+    // Show history in a quick pick for selection
+    const items = history.map(cmd => ({
+      label: cmd.command,
+      description: `${new Date(cmd.timestamp).toLocaleString()} (${cmd.source})`,
+      detail: cmd.terminalName ? `Terminal: ${cmd.terminalName}` : undefined,
+      command: cmd
+    }));
+
+    const selected = await window.showQuickPick(items, {
+      placeHolder: 'Select a command to re-run',
+      matchOnDescription: true
+    });
+
+    if (selected) {
+      // Re-run the selected command
+      const terminalManager = getTerminalManager();
+      const terminal = terminalManager.getOrCreateTerminal(selected.command.command, storage.getContext());
+
+      terminalManager.trackCommand(terminal.name, selected.command.command);
+      await historyManager.trackCommand(selected.command.command, 'manual', terminal.name);
+
+      await commands.executeCommand('workbench.action.terminal.focus');
+      terminal.show(true);
+
+      setTimeout(() => {
+        terminal.sendText(selected.command.command);
+        window.showInformationMessage(`Re-running: ${selected.command.command}`);
+      }, 500);
+    }
+
+  } catch (error) {
+    console.error('Error showing command history:', error);
+    window.showErrorMessage(`Failed to show command history: ${error}`);
+  }
+}
+
+/**
+ * Handle searching command history
+ */
+export async function handleSearchCommandHistory(): Promise<void> {
+  try {
+    const searchQuery = await window.showInputBox({
+      prompt: 'Search command history',
+      placeHolder: 'Enter search term (e.g., "git", "npm install")'
+    });
+
+    if (!searchQuery || !searchQuery.trim()) {
+      return;
+    }
+
+    const historyManager = getCommandHistoryManager();
+    const results = historyManager.searchHistory(searchQuery.trim(), 20);
+
+    if (results.length === 0) {
+      window.showInformationMessage(`No commands found matching "${searchQuery}"`);
+      return;
+    }
+
+    // Show search results
+    const items = results.map(cmd => ({
+      label: cmd.command,
+      description: `${new Date(cmd.timestamp).toLocaleString()} (${cmd.source})`,
+      detail: cmd.terminalName ? `Terminal: ${cmd.terminalName}` : undefined,
+      command: cmd
+    }));
+
+    const selected = await window.showQuickPick(items, {
+      placeHolder: `Found ${results.length} commands matching "${searchQuery}"`,
+      matchOnDescription: true
+    });
+
+    if (selected) {
+      // Re-run the selected command
+      const terminalManager = getTerminalManager();
+      const terminal = terminalManager.getOrCreateTerminal(selected.command.command, storage.getContext());
+
+      terminalManager.trackCommand(terminal.name, selected.command.command);
+      await historyManager.trackCommand(selected.command.command, 'manual', terminal.name);
+
+      await commands.executeCommand('workbench.action.terminal.focus');
+      terminal.show(true);
+
+      setTimeout(() => {
+        terminal.sendText(selected.command.command);
+        window.showInformationMessage(`Re-running: ${selected.command.command}`);
+      }, 500);
+    }
+
+  } catch (error) {
+    console.error('Error searching command history:', error);
+    window.showErrorMessage(`Failed to search command history: ${error}`);
+  }
+}
+
+/**
+ * Handle showing command history statistics
+ */
+export async function handleShowCommandHistoryStats(): Promise<void> {
+  try {
+    const historyManager = getCommandHistoryManager();
+    const stats = historyManager.getStats();
+
+    const statsMessage = `📊 Command History Statistics
+
+📈 Total Commands Executed: ${stats.totalCommands}
+📅 Commands Today: ${stats.todayCommands}
+📆 Commands This Week: ${stats.weekCommands}
+⭐ Favorite Commands: ${stats.favoriteCommands}
+🔥 Most Used Command: ${stats.mostUsedCommand ? stats.mostUsedCommand.command : 'None yet'}
+
+💡 Tip: Use "DotCommand: Search History" to find and re-run commands!`;
+
+    window.showInformationMessage(statsMessage);
+
+  } catch (error) {
+    console.error('Error showing command history stats:', error);
+    window.showErrorMessage(`Failed to show command history stats: ${error}`);
+  }
+}
+
+/**
+ * Handle showing analytics and usage insights
+ */
+export async function handleShowAnalytics(): Promise<void> {
+  try {
+    const allCommands = storage.getAllCommands();
+    const deletedCommands = storage.getDeletedCommands();
+
+    // Calculate analytics
+    const totalCommands = allCommands.length;
+    const favoriteCommands = allCommands.filter(cmd => cmd.isFavorite);
+    const mostUsedThreshold = workspace.getConfiguration('dotcommand').get<number>('mostUsedThreshold', 5);
+    const mostUsedCommands = allCommands.filter(cmd => (cmd.usageCount || 0) >= mostUsedThreshold);
+
+    // Category breakdown
+    const categoryStats = new Map<string, number>();
+    allCommands.forEach(cmd => {
+      const category = cmd.category || 'Uncategorized';
+      categoryStats.set(category, (categoryStats.get(category) || 0) + 1);
+    });
+
+    // Usage statistics
+    const totalUsage = allCommands.reduce((sum, cmd) => sum + (cmd.usageCount || 0), 0);
+    const averageUsage = totalCommands > 0 ? (totalUsage / totalCommands).toFixed(1) : '0';
+
+    // Recent activity (last 7 days)
+    const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+    const recentCommands = allCommands.filter(cmd => cmd.lastUsed && cmd.lastUsed > sevenDaysAgo);
+
+    // Build analytics message
+    let analyticsMessage = `📊 DotCommand Analytics\n\n`;
+    analyticsMessage += `📈 Total Commands: ${totalCommands}\n`;
+    analyticsMessage += `⭐ Favorites: ${favoriteCommands.length}\n`;
+    analyticsMessage += `🔥 Most Used (${mostUsedThreshold}+ runs): ${mostUsedCommands.length}\n`;
+    analyticsMessage += `🗑️ In Trash: ${deletedCommands.length}\n\n`;
+
+    analyticsMessage += `📊 Usage Statistics:\n`;
+    analyticsMessage += `• Total runs: ${totalUsage}\n`;
+    analyticsMessage += `• Average runs per command: ${averageUsage}\n`;
+    analyticsMessage += `• Recently used (7 days): ${recentCommands.length}\n\n`;
+
+    analyticsMessage += `📂 Category Breakdown:\n`;
+    Array.from(categoryStats.entries())
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 5)
+      .forEach(([category, count]) => {
+        analyticsMessage += `• ${category}: ${count}\n`;
+      });
+
+    if (mostUsedCommands.length > 0) {
+      analyticsMessage += `\n🔥 Top Most Used Commands:\n`;
+      mostUsedCommands
+        .sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0))
+        .slice(0, 3)
+        .forEach(cmd => {
+          const name = cmd.name || cmd.command.substring(0, 30) + (cmd.command.length > 30 ? '...' : '');
+          analyticsMessage += `• ${name} (${cmd.usageCount} runs)\n`;
+        });
+    }
+
+    // Show analytics in information message with actions
+    const action = await window.showInformationMessage(
+      analyticsMessage,
+      'View Most Used',
+      'View Favorites',
+      'View Trash'
+    );
+
+    switch (action) {
+      case 'View Most Used':
+        commands.executeCommand('dotcommand.commandsView.focus');
+        // Focus on most used section - this would require additional implementation
+        break;
+      case 'View Favorites':
+        commands.executeCommand('dotcommand.commandsView.focus');
+        // Focus on favorites section - this would require additional implementation
+        break;
+      case 'View Trash':
+        commands.executeCommand('dotcommand.viewTrash');
+        break;
+    }
+
+  } catch (error) {
+    console.error('Error showing analytics:', error);
+    window.showErrorMessage(`Failed to show analytics: ${error}`);
+  }
+}
+
+/**
+ * Handle showing available command templates
+ */
+export async function handleShowCommandTemplates(): Promise<void> {
+  try {
+    const templateManager = getTemplateManager();
+    const userTemplates = templateManager.getAllTemplates();
+    const predefinedCategories = templateManager.getPredefinedCategories();
+
+    // Combine user templates and predefined templates
+    const allCategories = [
+      ...predefinedCategories,
+      {
+        name: 'My Templates',
+        description: 'Your custom command templates',
+        icon: 'tools',
+        templates: userTemplates
+      }
+    ];
+
+    // Create quick pick items for categories
+    const categoryItems = allCategories.map(category => ({
+      label: category.name,
+      description: category.description,
+      detail: `${category.templates.length} templates available`,
+      category: category
+    }));
+
+    const selectedCategory = await window.showQuickPick(categoryItems, {
+      placeHolder: 'Select a template category',
+      matchOnDescription: true
+    });
+
+    if (!selectedCategory) return;
+
+    // Show templates in the selected category
+    const templateItems = selectedCategory.category.templates.map(template => ({
+      label: template.name,
+      description: template.description,
+      detail: `Variables: ${template.variables.length}`,
+      template: template
+    }));
+
+    const selectedTemplate = await window.showQuickPick(templateItems, {
+      placeHolder: `Select a template from ${selectedCategory.category.name}`,
+      matchOnDescription: true
+    });
+
+    if (selectedTemplate) {
+      // Execute the selected template
+      await templateManager.executeTemplate(selectedTemplate.template.id);
+    }
+
+  } catch (error) {
+    console.error('Error showing command templates:', error);
+    window.showErrorMessage(`Failed to show command templates: ${error}`);
+  }
+}
+
+/**
+ * Handle creating a new command template
+ */
+export async function handleCreateCommandTemplate(): Promise<void> {
+  try {
+    // Get template name
+    const templateName = await window.showInputBox({
+      prompt: 'Enter template name',
+      placeHolder: 'e.g., Custom Git Commit',
+      validateInput: (value) => {
+        if (!value || value.trim().length === 0) {
+          return 'Template name is required';
+        }
+        return null;
+      }
+    });
+
+    if (!templateName) return;
+
+    // Get template description
+    const templateDescription = await window.showInputBox({
+      prompt: 'Enter template description',
+      placeHolder: 'Brief description of what this template does'
+    });
+
+    if (!templateDescription) return;
+
+    // Get the command template
+    const commandTemplate = await window.showInputBox({
+      prompt: 'Enter command template',
+      placeHolder: 'e.g., git commit -m "{message}" - use {variable} for dynamic values',
+      validateInput: (value) => {
+        if (!value || value.trim().length === 0) {
+          return 'Command template is required';
+        }
+        return null;
+      }
+    });
+
+    if (!commandTemplate) return;
+
+    // Get category
+    const category = await window.showInputBox({
+      prompt: 'Enter category (optional)',
+      placeHolder: 'e.g., Git, Docker, NPM'
+    });
+
+    // Extract variables from template
+    const variableRegex = /\{([^}]+)\}/g;
+    const variables: TemplateVariable[] = [];
+    let match;
+
+    while ((match = variableRegex.exec(commandTemplate)) !== null) {
+      const varName = match[1];
+      if (!variables.find(v => v.name === varName)) {
+        // Get variable details
+        const varDescription = await window.showInputBox({
+          prompt: `Description for variable "${varName}"`,
+          placeHolder: `Describe what ${varName} should be`
+        });
+
+        if (!varDescription) continue;
+
+        const defaultValue = await window.showInputBox({
+          prompt: `Default value for "${varName}" (optional)`,
+          placeHolder: 'Leave empty for no default'
+        });
+
+        variables.push({
+          name: varName,
+          description: varDescription,
+          defaultValue: defaultValue || undefined,
+          required: true
+        });
+      }
+    }
+
+    // Create the template
+    const templateManager = getTemplateManager();
+    const template = await templateManager.createTemplate({
+      name: templateName.trim(),
+      description: templateDescription.trim(),
+      template: commandTemplate.trim(),
+      category: category?.trim() || 'Custom',
+      variables: variables
+    });
+
+    window.showInformationMessage(`Template "${template.name}" created successfully!`);
+
+  } catch (error) {
+    console.error('Error creating command template:', error);
+    window.showErrorMessage(`Failed to create template: ${error}`);
+  }
+}
+
+/**
+ * Handle executing a command template by ID
+ */
+export async function handleExecuteCommandTemplate(templateId?: string): Promise<void> {
+  try {
+    const templateManager = getTemplateManager();
+
+    let template: CommandTemplate | undefined;
+
+    if (templateId) {
+      template = templateManager.getTemplateById(templateId);
+    } else {
+      // Show template selection
+      const templates = templateManager.getAllTemplates();
+      if (templates.length === 0) {
+        window.showInformationMessage('No templates available. Create one first!');
+        return;
+      }
+
+      const items = templates.map(t => ({
+        label: t.name,
+        description: t.description,
+        detail: `Variables: ${t.variables.length}`,
+        template: t
+      }));
+
+      const selected = await window.showQuickPick(items, {
+        placeHolder: 'Select a template to execute',
+        matchOnDescription: true
+      });
+
+      if (!selected) return;
+      template = selected.template;
+    }
+
+    if (template) {
+      await templateManager.executeTemplate(template.id);
+    }
+
+  } catch (error) {
+    console.error('Error executing command template:', error);
+    window.showErrorMessage(`Failed to execute template: ${error}`);
+  }
+}
+
+/**
+ * Handle Quick Command Picker - fast searchable command execution
+ */
+export async function handleQuickCommandPicker(): Promise<void> {
+  try {
+    const historyManager = getCommandHistoryManager();
+    const templateManager = getTemplateManager();
+
+    // Collect all commands from different sources
+    const allCommands: Array<{
+      label: string;
+      description: string;
+      detail: string;
+      command: string;
+      source: string;
+      category: string;
+      usageCount?: number;
+      lastUsed?: number;
+    }> = [];
+
+    // Add saved commands
+    const savedCommands = storage.getAllCommands();
+    savedCommands.forEach(cmd => {
+      allCommands.push({
+        label: cmd.name || cmd.command,
+        description: cmd.command,
+        detail: `Saved • ${cmd.category} • Used ${cmd.usageCount || 0} times`,
+        command: cmd.command,
+        source: 'saved',
+        category: cmd.category || 'general',
+        usageCount: cmd.usageCount,
+        lastUsed: cmd.lastUsed
+      });
+    });
+
+    // Add prepared commands
+    const { getPreparedCommandsForCategory, getPreparedCommandCategories } = await import('../commands/prepared');
+    const categories = getPreparedCommandCategories();
+    categories.forEach(category => {
+      const commands = getPreparedCommandsForCategory(category);
+      commands.forEach(cmd => {
+        allCommands.push({
+          label: cmd.name,
+          description: cmd.command,
+          detail: `Prepared • ${category}`,
+          command: cmd.command,
+          source: 'prepared',
+          category: category
+        });
+      });
+    });
+
+    // Add template commands
+    const templates = templateManager.getAllTemplates();
+    templates.forEach(template => {
+      allCommands.push({
+        label: template.name,
+        description: template.template,
+        detail: `Template • ${template.category} • ${template.variables.length} variables`,
+        command: template.template,
+        source: 'template',
+        category: template.category,
+        usageCount: template.usageCount,
+        lastUsed: template.lastUsed
+      });
+    });
+
+    // Add recent history commands (last 10 unique commands)
+    const recentCommands = historyManager.getRecentCommands(20);
+    const uniqueRecent = new Map<string, typeof recentCommands[0]>();
+    recentCommands.forEach(cmd => {
+      if (!uniqueRecent.has(cmd.command)) {
+        uniqueRecent.set(cmd.command, cmd);
+      }
+    });
+
+    Array.from(uniqueRecent.values()).slice(0, 10).forEach(cmd => {
+      // Only add if not already in the list
+      if (!allCommands.find(c => c.command === cmd.command)) {
+        allCommands.push({
+          label: cmd.command,
+          description: `Recently executed`,
+          detail: `History • ${cmd.source} • ${new Date(cmd.timestamp).toLocaleDateString()}`,
+          command: cmd.command,
+          source: 'history',
+          category: cmd.category || 'recent'
+        });
+      }
+    });
+
+    // Sort by usage frequency and recency
+    allCommands.sort((a, b) => {
+      // Prioritize by usage count (descending)
+      const usageA = a.usageCount || 0;
+      const usageB = b.usageCount || 0;
+      if (usageA !== usageB) return usageB - usageA;
+
+      // Then by recency (descending)
+      const recentA = a.lastUsed || 0;
+      const recentB = b.lastUsed || 0;
+      if (recentA !== recentB) return recentB - recentA;
+
+      // Finally alphabetically
+      return a.label.localeCompare(b.label);
+    });
+
+    // Create QuickPick items
+    const quickPickItems = allCommands.map(cmd => ({
+      label: cmd.label,
+      description: cmd.description,
+      detail: cmd.detail,
+      command: cmd
+    }));
+
+    // Show QuickPick
+    const selected = await window.showQuickPick(quickPickItems, {
+      placeHolder: 'Search and execute commands...',
+      matchOnDescription: true,
+      matchOnDetail: true
+    });
+
+    if (selected) {
+      const cmd = selected.command;
+
+      // Handle different command sources
+      if (cmd.source === 'template') {
+        // Execute template
+        const template = templates.find(t => t.template === cmd.command);
+        if (template?.id) {
+          await templateManager.executeTemplate(template.id);
+        } else {
+          window.showErrorMessage('Template not found or invalid');
+        }
+      } else {
+        // Execute regular command
+        const terminalManager = getTerminalManager();
+        const terminal = terminalManager.getOrCreateTerminal(cmd.command, storage.getContext());
+
+        // Track execution
+        terminalManager.trackCommand(terminal.name, cmd.command);
+        await historyManager.trackCommand(cmd.command, 'manual', terminal.name, cmd.category);
+
+        // Execute
+        await commands.executeCommand('workbench.action.terminal.focus');
+        terminal.show(true);
+
+        setTimeout(() => {
+          terminal.sendText(cmd.command);
+          window.showInformationMessage(`Executed: ${cmd.label}`);
+        }, 500);
+      }
+    }
+
+  } catch (error) {
+    console.error('Error in Quick Command Picker:', error);
+    window.showErrorMessage(`Quick Command Picker failed: ${error}`);
+  }
+}
+
+/**
+ * Handle showing favorite commands
+ */
+export async function handleShowFavorites(): Promise<void> {
+  try {
+    const favoriteCommands = storage.getAllCommands().filter(cmd => cmd.isFavorite);
+
+    if (favoriteCommands.length === 0) {
+      window.showInformationMessage('No favorite commands yet. Mark commands as favorites with ⭐ icon!');
+      return;
+    }
+
+    // Show favorites in QuickPick for selection
+    const items = favoriteCommands.map(cmd => ({
+      label: cmd.name || cmd.command,
+      description: cmd.command,
+      detail: `Category: ${cmd.category} • Used ${cmd.usageCount || 0} times`,
+      command: cmd
+    }));
+
+    const selected = await window.showQuickPick(items, {
+      placeHolder: `Select a favorite command (${favoriteCommands.length} available)`,
+      matchOnDescription: true
+    });
+
+    if (selected) {
+      // Run the selected favorite command
+      const terminalManager = getTerminalManager();
+      const terminal = terminalManager.getOrCreateTerminal(selected.command.command, storage.getContext());
+
+      terminalManager.trackCommand(terminal.name, selected.command.command);
+      const historyManager = getCommandHistoryManager();
+      await historyManager.trackCommand(selected.command.command, 'saved', terminal.name, selected.command.category);
+
+      await commands.executeCommand('workbench.action.terminal.focus');
+      terminal.show(true);
+
+      setTimeout(() => {
+        terminal.sendText(selected.command.command);
+        window.showInformationMessage(`⭐ Running favorite: ${selected.label}`);
+      }, 500);
+    }
+
+  } catch (error) {
+    console.error('Error showing favorites:', error);
+    window.showErrorMessage(`Failed to show favorites: ${error}`);
+  }
+}
+
+/**
+ * Handle showing recent commands
+ */
+export async function handleShowRecentCommands(): Promise<void> {
+  try {
+    const historyManager = getCommandHistoryManager();
+    const recentCommands = historyManager.getRecentCommands(10);
+
+    if (recentCommands.length === 0) {
+      window.showInformationMessage('No recent commands yet. Run some commands first!');
+      return;
+    }
+
+    // Show recent commands in QuickPick for selection
+    const items = recentCommands.map(cmd => ({
+      label: cmd.command,
+      description: `Executed ${new Date(cmd.timestamp).toLocaleString()}`,
+      detail: `Source: ${cmd.source} • Terminal: ${cmd.terminalName}`,
+      command: cmd
+    }));
+
+    const selected = await window.showQuickPick(items, {
+      placeHolder: `Select a recent command (${recentCommands.length} available)`,
+      matchOnDescription: true
+    });
+
+    if (selected) {
+      // Re-run the selected recent command
+      const terminalManager = getTerminalManager();
+      const terminal = terminalManager.getOrCreateTerminal(selected.command.command, storage.getContext());
+
+      terminalManager.trackCommand(terminal.name, selected.command.command);
+      await historyManager.trackCommand(selected.command.command, 'manual', terminal.name, selected.command.category);
+
+      await commands.executeCommand('workbench.action.terminal.focus');
+      terminal.show(true);
+
+      setTimeout(() => {
+        terminal.sendText(selected.command.command);
+        window.showInformationMessage(`🔄 Re-running: ${selected.command.command}`);
+      }, 500);
+    }
+
+  } catch (error) {
+    console.error('Error showing recent commands:', error);
+    window.showErrorMessage(`Failed to show recent commands: ${error}`);
+  }
+}
+
+/**
  * Automatically add all generated tasks to My Commands
  */
-async function autoAddTasksToMyCommands(tasks: any[]): Promise<void> {
+async function autoAddTasksToMyCommands(tasks: PreparedTask[]): Promise<void> {
   let addedCount = 0;
 
   for (const task of tasks) {

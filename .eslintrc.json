@@ -4,6 +4,9 @@
     "es2021": true,
     "node": true
   },
+  "globals": {
+    "acquireVsCodeApi": "readonly"
+  },
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended"

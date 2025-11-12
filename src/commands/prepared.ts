@@ -1,4 +1,6 @@
-import { window } from 'vscode';
+import { window, ExtensionContext } from 'vscode';
+import { getTerminalManager } from '../utils/terminalManager';
+import { getCommandHistoryManager } from '../utils/commandHistory';
 
 /**
  * Definition for a parameter that needs user input
@@ -25,7 +27,7 @@ export interface PreparedCommand {
 /**
  * Available prepared commands with dynamic parameters
  */
-const PREPARED_COMMANDS: PreparedCommand[] = [
+export const PREPARED_COMMANDS: PreparedCommand[] = [
   // Git Commands
   {
     name: 'Check Status',
@@ -344,7 +346,7 @@ const PREPARED_COMMANDS: PreparedCommand[] = [
         name: 'name',
         description: 'Image name/tag',
         defaultValue: 'myapp',
-        validation: (value) => /^[a-zA-Z0-9-_\.]+$/.test(value),
+        validation: (value) => new RegExp('^[a-zA-Z0-9-_\\.]+$').test(value),
         validationMessage: 'Image name can only contain letters, numbers, dots, hyphens, and underscores'
       }
     ]
@@ -495,7 +497,7 @@ const PREPARED_COMMANDS: PreparedCommand[] = [
         name: 'source',
         description: 'Source file path with extension (e.g., source.txt, app.js)',
         defaultValue: 'source.txt',
-        validation: (value) => /\.[a-zA-Z0-9]+$/.test(value),
+        validation: (value) => new RegExp('\\.[a-zA-Z0-9]+$').test(value),
         validationMessage: 'File name must include a file extension (e.g., .txt, .html, .js, .css)'
       },
       {
@@ -517,14 +519,14 @@ const PREPARED_COMMANDS: PreparedCommand[] = [
         name: 'source',
         description: 'Current file path with extension (e.g., old-name.txt)',
         defaultValue: 'old-name.txt',
-        validation: (value) => /\.[a-zA-Z0-9]+$/.test(value),
+        validation: (value) => new RegExp('\\.[a-zA-Z0-9]+$').test(value),
         validationMessage: 'File name must include a file extension (e.g., .txt, .html, .js, .css)'
       },
       {
         name: 'destination',
-        description: 'New file path with extension (e.g., new-name.txt)',
-        defaultValue: 'new-name.txt',
-        validation: (value) => /\.[a-zA-Z0-9]+$/.test(value),
+        description: 'Destination file path with extension (e.g., destination.txt, app.js)',
+        defaultValue: 'destination.txt',
+        validation: (value) => new RegExp('\\.[a-zA-Z0-9]+$').test(value),
         validationMessage: 'File name must include a file extension (e.g., .txt, .html, .js, .css)'
       }
     ]
@@ -539,7 +541,7 @@ const PREPARED_COMMANDS: PreparedCommand[] = [
         name: 'file',
         description: 'File path with extension (e.g., file.txt, app.js, style.css)',
         defaultValue: 'file.txt',
-        validation: (value) => /\.[a-zA-Z0-9]+$/.test(value),
+        validation: (value) => new RegExp('\\.[a-zA-Z0-9]+$').test(value),
         validationMessage: 'File name must include a file extension (e.g., .txt, .html, .js, .css)'
       }
     ]
@@ -579,7 +581,7 @@ const PREPARED_COMMANDS: PreparedCommand[] = [
         name: 'file',
         description: 'File path with extension (e.g., file.txt, app.js, log.txt)',
         defaultValue: 'file.txt',
-        validation: (value) => /\.[a-zA-Z0-9]+$/.test(value),
+        validation: (value) => new RegExp('\\.[a-zA-Z0-9]+$').test(value),
         validationMessage: 'File name must include a file extension (e.g., .txt, .html, .js, .css)'
       }
     ]
@@ -1049,7 +1051,7 @@ export function getPreparedCommandCategories(): string[] {
 /**
  * Handle running a prepared command with dynamic parameters
  */
-export async function handlePreparedCommand(commandTemplate: string): Promise<void> {
+export async function handlePreparedCommand(commandTemplate: string, context?: ExtensionContext): Promise<void> {
   // Find the command definition
   const preparedCommand = PREPARED_COMMANDS.find(cmd => cmd.command === commandTemplate);
 
@@ -1116,11 +1118,17 @@ export async function handlePreparedCommand(commandTemplate: string): Promise<vo
     );
 
     if (confirm === 'Yes, Run') {
-      // Get existing terminal or create new one
-      let terminal = window.activeTerminal || window.terminals[0];
-      if (!terminal) {
-        terminal = window.createTerminal('DotCommand');
-      }
+      // Get terminal for this command using TerminalManager
+      const terminalManager = getTerminalManager();
+      const terminal = terminalManager.getOrCreateTerminal(finalCommand, context);
+
+      // Track command execution
+      const terminalName = terminal.name;
+      terminalManager.trackCommand(terminalName, finalCommand);
+
+      // Track in global command history
+      const historyManager = getCommandHistoryManager();
+      await historyManager.trackCommand(finalCommand, 'prepared', terminalName, preparedCommand.category);
 
       // Show the terminal and wait for it to be ready
       terminal.show();

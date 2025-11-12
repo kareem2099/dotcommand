@@ -1,325 +1,32 @@
-import { commands, ExtensionContext, window, workspace, TreeView, TerminalShellExecutionStartEvent, TreeDataProvider, TreeItem, TreeItemCollapsibleState, ThemeIcon } from 'vscode';
-import { CommandStorage } from './storage';
-import { CommandsTreeDataProvider } from './treeView';
-import { initializeCommandHandlers } from './commandHandlers';
-import { initializeHistoryHandlers } from './historyHandlers';
-import { initializeTrashHandlers, handleViewTrash } from './trashHandlers';
-import { handleViewCommands } from './viewHandlers';
-import { handleRunPreparedCommand } from './commandHandlers';
-import { registerTaskProvider } from './taskProvider';
-import { getPreparedCommandCategories, getPreparedCommandsForCategory } from './preparedCommands';
-import { TaskManagerWebview } from './taskManagerWebview';
+import { commands, ExtensionContext, window, workspace, TreeView, TreeItem, TerminalShellExecutionStartEvent, StatusBarItem, StatusBarAlignment } from 'vscode';
+import { CommandStorage } from './storage/storage';
+import { CommandsTreeDataProvider } from './providers/treeView';
+import { initializeCommandHandlers, handleSaveCommand, handleCopyCommandFromTree, handleRunAndTrackCommand, handleDeleteCommandFromTree, handleToggleFavorite, handleRunPreparedCommand, handleAddToMyCommands, handleMoveToMyCommands, handleTestCommand, handleCreateNewTaskTemplate, handleShowAnalytics, handleShowCommandHistory, handleSearchCommandHistory, handleShowCommandHistoryStats, handleShowCommandTemplates, handleCreateCommandTemplate, handleExecuteCommandTemplate, handleQuickCommandPicker, handleShowFavorites, handleShowRecentCommands } from './commands/handlers';
+import { initializeHistoryHandlers, handleImportTerminalHistory } from './handlers/history';
+import { initializeTrashHandlers, handleViewTrash, handleRestoreCommandFromTrash } from './handlers/trash';
+import { initializeSearchFilterHandlers, handleSearchPreparedCommands, handleSearchMyCommands, handleClearPreparedFilters, handleClearMyCommandsFilters } from './handlers/searchFilter';
+import { handleViewCommands } from './handlers/view';
+import { registerTaskProvider } from './providers/taskProvider';
+import { TaskManagerWebview } from './webviews/taskManager';
+import { TemplateManagerWebview } from './webviews/templateManager';
+import { PreparedCommandsTreeDataProvider } from './providers/preparedCommandsTreeDataProvider';
+import { initializeTerminalManager } from './utils/terminalManager';
+import { initializeCommandHistory } from './utils/commandHistory';
+import { initializeTemplateManager } from './utils/commandTemplates';
+import { initializeCommandSuggestions, getCommandSuggestionsManager } from './utils/commandSuggestions';
 
-/**
- * Tree data provider for prepared (built-in) commands
- */
-class PreparedCommandsTreeDataProvider implements TreeDataProvider<TreeItem> {
-  private _onDidChangeTreeData: any;
 
-  constructor() {}
-
-  getTreeItem(element: TreeItem): TreeItem {
-    return element;
-  }
-
-  getChildren(element?: TreeItem): Promise<TreeItem[]> {
-    return this.getPreparedViewChildren(element);
-  }
-
-  private async getPreparedViewChildren(element?: TreeItem): Promise<TreeItem[]> {
-    if (!element) {
-      // Root level - show prepared command categories
-      const items: TreeItem[] = [];
-
-      // Get all categories from the PREPARED_COMMANDS
-      const categories = getPreparedCommandCategories();
-
-      // Create items for each category
-      categories.forEach(category => {
-        const categoryItem = this.createCategoryTreeItem(category);
-        items.push(categoryItem);
-      });
-
-      // My Prepared Tasks from tasks.dotcommand - always show at the end
-      const { readTasksDotCommand } = require('./taskProvider');
-      const userTasks = await readTasksDotCommand();
-      if (userTasks.length > 0) {
-        const tasksItem = new TreeItem('📋 My Prepared Tasks', TreeItemCollapsibleState.Collapsed);
-        tasksItem.iconPath = new ThemeIcon('tools');
-        tasksItem.contextValue = 'preparedCategory';
-        tasksItem.tooltip = 'Custom prepared tasks from tasks.dotcommand file';
-        items.push(tasksItem);
-      }
-
-      return items;
-    }
-
-    // Handle expansion of prepared categories
-    if (element.contextValue === 'preparedCategory') {
-      const label = typeof element.label === 'string' ? element.label : element.label?.label;
-      // Extract category name from label (format: "emoji Category Name")
-      const categoryName = label?.split(' ').slice(1).join(' ').trim();
-
-      if (categoryName === 'My Prepared Tasks') {
-        return this.getMyPreparedTasks();
-      } else {
-        // Handle dynamic categories from PREPARED_COMMANDS
-        return this.getDynamicCategoryCommands(categoryName || '');
-      }
-    }
-
-    return [];
-  }
-
-  private getPreparedGitCommands(): TreeItem[] {
-    return [
-      this.createPreparedCommandItem('Check Status', 'git status', 'View changes in your working directory'),
-      this.createPreparedCommandItem('Stage Changes', 'git add .', 'Stage all changed files'),
-      this.createPreparedCommandItem('Commit Changes', 'git commit -m "updates"', 'Commit staged changes with message'),
-      this.createPreparedCommandItem('Push to Main', 'git push origin main', 'Push commits to main branch'),
-      this.createPreparedCommandItem('Pull from Main', 'git pull origin main', 'Pull changes from main branch'),
-      this.createPreparedCommandItem('View History', 'git log --oneline', 'View recent commit history'),
-      this.createPreparedCommandItem('Create Branch', 'git checkout -b feature', 'Create and switch to new branch'),
-      this.createPreparedCommandItem('Switch Branch', 'git checkout main', 'Switch to existing branch')
-    ];
-  }
-
-  private getPreparedNpmCommands(): TreeItem[] {
-    return [
-      this.createPreparedCommandItem('Install Packages', 'npm install', 'Install all project dependencies'),
-      this.createPreparedCommandItem('Start Dev Server', 'npm run dev', 'Run development server'),
-      this.createPreparedCommandItem('Build Project', 'npm run build', 'Create production build'),
-      this.createPreparedCommandItem('Run Tests', 'npm run test', 'Execute test suite'),
-      this.createPreparedCommandItem('Run Linter', 'npm run lint', 'Check code quality'),
-      this.createPreparedCommandItem('Add Package', 'npm install package-name', 'Install a specific package'),
-      this.createPreparedCommandItem('Update Packages', 'npm update', 'Update all dependencies'),
-      this.createPreparedCommandItem('Remove Package', 'npm uninstall package-name', 'Remove a package')
-    ];
-  }
-
-  private getPreparedDockerCommands(): TreeItem[] {
-    return [
-      this.createPreparedCommandItem('Build Image', 'docker build -t myapp .', 'Build Docker image from Dockerfile'),
-      this.createPreparedCommandItem('Run Container', 'docker run -p 3000:3000 myapp', 'Run Docker container'),
-      this.createPreparedCommandItem('List Images', 'docker images', 'List all Docker images'),
-      this.createPreparedCommandItem('List Containers', 'docker ps -a', 'List all containers'),
-      this.createPreparedCommandItem('Docker Compose Up', 'docker-compose up -d', 'Start services with compose'),
-      this.createPreparedCommandItem('View Logs', 'docker logs container-name', 'View container logs'),
-      this.createPreparedCommandItem('Execute Shell', 'docker exec -it container-name sh', 'Execute shell in running container'),
-      this.createPreparedCommandItem('Stop Container', 'docker stop container-name', 'Stop running container')
-    ];
-  }
-
-  private getPreparedK8sCommands(): TreeItem[] {
-    return [
-      this.createPreparedCommandItem('Get Pods', 'kubectl get pods', 'List all pods in cluster'),
-      this.createPreparedCommandItem('Get Services', 'kubectl get services', 'List all services'),
-      this.createPreparedCommandItem('Get Logs', 'kubectl logs pod-name', 'View logs from pod'),
-      this.createPreparedCommandItem('Apply Manifest', 'kubectl apply -f file.yml', 'Apply Kubernetes manifest'),
-      this.createPreparedCommandItem('Delete Pod', 'kubectl delete pod pod-name', 'Delete specific pod'),
-      this.createPreparedCommandItem('View Events', 'kubectl get events', 'Show cluster events'),
-      this.createPreparedCommandItem('Check Status', 'kubectl cluster-info', 'Get cluster information'),
-      this.createPreparedCommandItem('Scale Deployment', 'kubectl scale deployment app-name --replicas=3', 'Scale deployment replicas')
-    ];
-  }
-
-  private getPreparedLinuxCommands(): TreeItem[] {
-    return [
-      this.createPreparedCommandItem('Current Directory', 'pwd', 'Print working directory path'),
-      this.createPreparedCommandItem('List Files', 'ls -la', 'List files with detailed information'),
-      this.createPreparedCommandItem('Change Directory', 'cd {directory}', 'Navigate to a folder'),
-      this.createPreparedCommandItem('Create Directory', 'mkdir {directory}', 'Create a new directory'),
-      this.createPreparedCommandItem('Remove Directory', 'rm -rf {directory}', 'Remove directory and contents'),
-      this.createPreparedCommandItem('Copy File', 'cp {source} {destination}', 'Copy files or directories'),
-      this.createPreparedCommandItem('Move File', 'mv {source} {destination}', 'Move or rename files'),
-      this.createPreparedCommandItem('View File', 'cat {file}', 'Display file contents'),
-      this.createPreparedCommandItem('Find Files', 'find {directory} -name "{pattern}"', 'Search for files by name'),
-      this.createPreparedCommandItem('Search Text', 'grep "{search}" {file}', 'Search for text in files')
-    ];
-  }
-
-  private async getMyPreparedTasks(): Promise<TreeItem[]> {
-    const { readTasksDotCommand } = require('./taskProvider');
-    const userTasks = await readTasksDotCommand();
-
-    return userTasks.map((task: any) => {
-      const item = new TreeItem(task.label);
-      item.description = task.command;
-      item.tooltip = `${task.description || 'Custom prepared task'}\n\nRight-click: Run this task or Move to My Commands`;
-      item.iconPath = new ThemeIcon('tools');
-      item.contextValue = 'userPreparedTaskItem'; // Changed to differentiate from built-in prepared commands
-      item.id = `user_prepared_task_${task.command.replace(/[^a-zA-Z0-9]/g, '_')}`;
-
-      item.command = {
-        command: 'dotcommand.runPreparedCommand',
-        arguments: [task.command], // Pass the command template that will be looked up
-        title: 'Run Prepared Task'
-      };
-      return item;
-    });
-  }
-
-  private async getNpmTasks(): Promise<TreeItem[]> {
-    const { readTasksDotCommand } = require('./taskProvider');
-    const npmTasks = await readTasksDotCommand();
-
-    return npmTasks.map((task: any) => {
-      const item = new TreeItem(task.label);
-      item.description = task.command;
-      item.tooltip = `${task.description || 'NPM task from tasks.dotcommand'}\n\nRight-click: Run this task or Move to My Commands`;
-      item.iconPath = new ThemeIcon('package');
-      item.contextValue = 'userPreparedTaskItem'; // Changed to allow moving to My Commands
-      item.id = `npm_task_${task.command.replace(/[^a-zA-Z0-9]/g, '_')}`;
-
-      item.command = {
-        command: 'dotcommand.runPreparedCommand',
-        arguments: [task.command],
-        title: 'Run NPM Task'
-      };
-      return item;
-    });
-  }
-
-  /**
-   * Create a category tree item with appropriate icon and tooltip
-   */
-  private createCategoryTreeItem(categoryName: string): TreeItem {
-    const { icon, tooltip } = this.getCategoryDisplayInfo(categoryName);
-    const item = new TreeItem(icon + ' ' + categoryName, TreeItemCollapsibleState.Collapsed);
-    item.iconPath = this.getCategoryIcon(categoryName);
-    item.contextValue = 'preparedCategory';
-    item.tooltip = tooltip;
-    return item;
-  }
-
-  /**
-   * Get display information for a category
-   */
-  private getCategoryDisplayInfo(categoryName: string): { icon: string; tooltip: string } {
-    const categoryMap: { [key: string]: { icon: string; tooltip: string } } = {
-      'Git Commands': {
-        icon: '🚀',
-        tooltip: 'Essential Git commands for version control'
-      },
-      'Git Commands Advanced': {
-        icon: '🌟',
-        tooltip: 'Advanced Git commands for power users'
-      },
-      'NPM Commands': {
-        icon: '📦',
-        tooltip: 'Common NPM package management commands'
-      },
-      'Yarn Commands': {
-        icon: '🧶',
-        tooltip: 'Yarn package manager commands'
-      },
-      'Python Commands': {
-        icon: '🐍',
-        tooltip: 'Python development and management commands'
-      },
-      'Database Commands': {
-        icon: '🗃️',
-        tooltip: 'Database connection and management commands'
-      },
-      'Docker Commands': {
-        icon: '🐳',
-        tooltip: 'Docker container management commands'
-      },
-      'Kubernetes Commands': {
-        icon: '☸️',
-        tooltip: 'Kubernetes cluster management commands'
-      },
-      'Linux Commands': {
-        icon: '🐧',
-        tooltip: 'Essential Linux system commands'
-      },
-      'Code Quality Commands': {
-        icon: '✨',
-        tooltip: 'Code linting and formatting tools'
-      },
-      'Testing Commands': {
-        icon: '🧪',
-        tooltip: 'Testing frameworks and utilities'
-      },
-      'Deployment Commands': {
-        icon: '🚀',
-        tooltip: 'Application deployment commands'
-      }
-    };
-
-    return categoryMap[categoryName] || {
-      icon: '📁',
-      tooltip: `Commands for ${categoryName.toLowerCase()}`
-    };
-  }
-
-  /**
-   * Get VS Code ThemeIcon for a category
-   */
-  private getCategoryIcon(categoryName: string): ThemeIcon {
-    const iconMap: { [key: string]: ThemeIcon } = {
-      'Git Commands': new ThemeIcon('git-branch'),
-      'Git Commands Advanced': new ThemeIcon('git-commit'),
-      'NPM Commands': new ThemeIcon('package'),
-      'Yarn Commands': new ThemeIcon('extensions'),
-      'Python Commands': new ThemeIcon('snake'),
-      'Database Commands': new ThemeIcon('database'),
-      'Docker Commands': new ThemeIcon('vm'),
-      'Kubernetes Commands': new ThemeIcon('server-process'),
-      'Linux Commands': new ThemeIcon('terminal'),
-      'Code Quality Commands': new ThemeIcon('checklist'),
-      'Testing Commands': new ThemeIcon('beaker'),
-      'Deployment Commands': new ThemeIcon('cloud-upload')
-    };
-
-    return iconMap[categoryName] || new ThemeIcon('folder');
-  }
-
-  /**
-   * Get commands for any dynamic category from PREPARED_COMMANDS
-   */
-  private getDynamicCategoryCommands(categoryName: string): TreeItem[] {
-    const commands = getPreparedCommandsForCategory(categoryName);
-
-    return commands.map(cmd => {
-      const item = new TreeItem(cmd.name);
-      item.description = cmd.command;
-      item.tooltip = `${cmd.description}\n\nRight-click: Run this prepared command`;
-      item.iconPath = new ThemeIcon('star');
-      item.contextValue = 'preparedCommandItem';
-      item.id = `prepared_${cmd.name.replace(/[^a-zA-Z0-9]/g, '_')}_${cmd.command.replace(/[^a-zA-Z0-9]/g, '_')}`;
-
-      item.command = {
-        command: 'dotcommand.runPreparedCommand',
-        arguments: [cmd.command], // Pass the command template that will be looked up
-        title: 'Run Prepared Command'
-      };
-      return item;
-    });
-  }
-
-  private createPreparedCommandItem(name: string, command: string, description: string): TreeItem {
-    const item = new TreeItem(name);
-    item.description = command;
-    item.tooltip = `${description}\n\nRight-click: Run this prepared command`;
-    item.iconPath = new ThemeIcon('star');
-    item.contextValue = 'preparedCommandItem';
-    item.id = `prepared_${command.replace(/[^a-zA-Z0-9]/g, '_')}`;
-
-    item.command = {
-      command: 'dotcommand.runPreparedCommand',
-      arguments: [command], // Pass the command template that will be looked up
-      title: 'Run Prepared Command'
-    };
-    return item;
-  }
-}
 
 let storage: CommandStorage;
 let treeDataProvider: CommandsTreeDataProvider;
 let preparedTreeDataProvider: PreparedCommandsTreeDataProvider;
-let treeView: TreeView<any>;
-let preparedTreeView: TreeView<any>;
+let treeView: TreeView<TreeItem>;
+let preparedTreeView: TreeView<TreeItem>;
+
+// Status bar items for quick access
+let statusBarFavorites: StatusBarItem;
+let statusBarRecent: StatusBarItem;
+let statusBarQuickRun: StatusBarItem;
 
 /**
  * Activate the extension
@@ -335,6 +42,15 @@ export async function activate(context: ExtensionContext): Promise<void> {
   initializeCommandHandlers(storage, treeDataProvider);
   initializeHistoryHandlers(storage, treeDataProvider);
   initializeTrashHandlers(storage, treeDataProvider);
+  initializeSearchFilterHandlers(preparedTreeDataProvider, treeDataProvider, preparedTreeView, treeView);
+  // Initialize terminal manager
+  initializeTerminalManager(context);
+  // Initialize command history
+  initializeCommandHistory(context, storage);
+  // Initialize template manager
+  initializeTemplateManager(context, storage);
+  // Initialize command suggestions
+  initializeCommandSuggestions(storage);
   // Note: Prepared commands don't need separate initialization - they're handled in PreparedCommandsTreeDataProvider
 
   // Create the main commands tree view
@@ -350,7 +66,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
   // Register commands using the already-initialized handlers
   const saveCommandDisposable = commands.registerCommand(
     'dotcommand.saveCommand',
-    require('./commandHandlers').handleSaveCommand
+    handleSaveCommand
   );
 
   const viewCommandsDisposable = commands.registerCommand(
@@ -365,57 +81,57 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
   const copyCommandFromTreeDisposable = commands.registerCommand(
     'dotcommand.copyCommandFromTree',
-    require('./commandHandlers').handleCopyCommandFromTree
+    handleCopyCommandFromTree
   );
 
   const runCommandFromTreeDisposable = commands.registerCommand(
     'dotcommand.runCommandFromTree',
-    require('./commandHandlers').handleRunAndTrackCommand
+    handleRunAndTrackCommand
   );
 
   const deleteCommandFromTreeDisposable = commands.registerCommand(
     'dotcommand.deleteCommandFromTree',
-    require('./commandHandlers').handleDeleteCommandFromTree
+    handleDeleteCommandFromTree
   );
 
   const toggleFavoriteCommandDisposable = commands.registerCommand(
     'dotcommand.toggleFavorite',
-    require('./commandHandlers').handleToggleFavorite
+    handleToggleFavorite
   );
 
   const importTerminalHistoryDisposable = commands.registerCommand(
     'dotcommand.importTerminalHistory',
-    require('./historyHandlers').handleImportTerminalHistory
+    handleImportTerminalHistory
   );
 
   const restoreCommandDisposable = commands.registerCommand(
     'dotcommand.restoreCommandFromTrash',
-    require('./trashHandlers').handleRestoreCommandFromTrash
+    handleRestoreCommandFromTrash
   );
 
   const runPreparedCommandDisposable = commands.registerCommand(
     'dotcommand.runPreparedCommand',
-    require('./commandHandlers').handleRunPreparedCommand
+    handleRunPreparedCommand
   );
 
   const addToMyCommandsDisposable = commands.registerCommand(
     'dotcommand.addToMyCommands',
-    require('./commandHandlers').handleAddToMyCommands
+    handleAddToMyCommands
   );
 
   const moveToMyCommandsDisposable = commands.registerCommand(
     'dotcommand.moveToMyCommands',
-    require('./commandHandlers').handleMoveToMyCommands
+    handleMoveToMyCommands
   );
 
   const testCommandDisposable = commands.registerCommand(
     'dotcommand.testCommand',
-    require('./commandHandlers').handleTestCommand
+    handleTestCommand
   );
 
   const createNewTaskTemplateDisposable = commands.registerCommand(
     'dotcommand.createNewTaskTemplate',
-    require('./commandHandlers').handleCreateNewTaskTemplate
+    handleCreateNewTaskTemplate
   );
 
   const taskManagerDisposable = commands.registerCommand(
@@ -425,8 +141,94 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
   const viewTrashDisposable = commands.registerCommand(
     'dotcommand.viewTrash',
-    require('./trashHandlers').handleViewTrash
+    handleViewTrash
   );
+
+  const showAnalyticsDisposable = commands.registerCommand(
+    'dotcommand.showAnalytics',
+    handleShowAnalytics
+  );
+
+  const searchPreparedCommandsDisposable = commands.registerCommand(
+    'dotcommand.searchPreparedCommands',
+    handleSearchPreparedCommands
+  );
+
+  const searchMyCommandsDisposable = commands.registerCommand(
+    'dotcommand.searchMyCommands',
+    handleSearchMyCommands
+  );
+
+  const clearPreparedFiltersDisposable = commands.registerCommand(
+    'dotcommand.clearPreparedFilters',
+    handleClearPreparedFilters
+  );
+
+  const clearMyCommandsFiltersDisposable = commands.registerCommand(
+    'dotcommand.clearMyCommandsFilters',
+    handleClearMyCommandsFilters
+  );
+
+  const showCommandHistoryDisposable = commands.registerCommand(
+    'dotcommand.showCommandHistory',
+    handleShowCommandHistory
+  );
+
+  const searchCommandHistoryDisposable = commands.registerCommand(
+    'dotcommand.searchCommandHistory',
+    handleSearchCommandHistory
+  );
+
+  const showCommandHistoryStatsDisposable = commands.registerCommand(
+    'dotcommand.showCommandHistoryStats',
+    handleShowCommandHistoryStats
+  );
+
+  const showCommandTemplatesDisposable = commands.registerCommand(
+    'dotcommand.showCommandTemplates',
+    handleShowCommandTemplates
+  );
+
+  const createCommandTemplateDisposable = commands.registerCommand(
+    'dotcommand.createCommandTemplate',
+    handleCreateCommandTemplate
+  );
+
+  const executeCommandTemplateDisposable = commands.registerCommand(
+    'dotcommand.executeCommandTemplate',
+    handleExecuteCommandTemplate
+  );
+
+  const templateManagerDisposable = commands.registerCommand(
+    'dotcommand.templateManager',
+    () => TemplateManagerWebview.getInstance(context).show()
+  );
+
+  const quickCommandPickerDisposable = commands.registerCommand(
+    'dotcommand.quickCommandPicker',
+    handleQuickCommandPicker
+  );
+
+  const showFavoritesDisposable = commands.registerCommand(
+    'dotcommand.showFavorites',
+    handleShowFavorites
+  );
+
+  const showRecentCommandsDisposable = commands.registerCommand(
+    'dotcommand.showRecentCommands',
+    handleShowRecentCommands
+  );
+
+  const triggerSuggestionsDisposable = commands.registerCommand(
+    'dotcommand.triggerSuggestions',
+    async () => {
+      const suggestionsManager = getCommandSuggestionsManager();
+      await suggestionsManager.triggerSuggestions();
+    }
+  );
+
+  // Set up status bar items for quick access
+  setupStatusBar(context);
 
   // Set up terminal monitoring
   setupTerminalMonitoring(context);
@@ -448,6 +250,25 @@ export async function activate(context: ExtensionContext): Promise<void> {
   context.subscriptions.push(addToMyCommandsDisposable);
   context.subscriptions.push(moveToMyCommandsDisposable);
   context.subscriptions.push(testCommandDisposable);
+  context.subscriptions.push(createNewTaskTemplateDisposable);
+  context.subscriptions.push(taskManagerDisposable);
+  context.subscriptions.push(viewTrashDisposable);
+  context.subscriptions.push(showAnalyticsDisposable);
+  context.subscriptions.push(searchPreparedCommandsDisposable);
+  context.subscriptions.push(searchMyCommandsDisposable);
+  context.subscriptions.push(clearPreparedFiltersDisposable);
+  context.subscriptions.push(clearMyCommandsFiltersDisposable);
+  context.subscriptions.push(showCommandHistoryDisposable);
+  context.subscriptions.push(searchCommandHistoryDisposable);
+  context.subscriptions.push(showCommandHistoryStatsDisposable);
+  context.subscriptions.push(showCommandTemplatesDisposable);
+  context.subscriptions.push(createCommandTemplateDisposable);
+  context.subscriptions.push(executeCommandTemplateDisposable);
+  context.subscriptions.push(templateManagerDisposable);
+  context.subscriptions.push(quickCommandPickerDisposable);
+  context.subscriptions.push(showFavoritesDisposable);
+  context.subscriptions.push(showRecentCommandsDisposable);
+  context.subscriptions.push(triggerSuggestionsDisposable);
   context.subscriptions.push(treeView);
   context.subscriptions.push(preparedTreeView);
 
@@ -485,6 +306,89 @@ function setupTerminalMonitoring(context: ExtensionContext): void {
 }
 
 /**
+ * Set up status bar items for quick command access
+ */
+function setupStatusBar(context: ExtensionContext): void {
+  // Create status bar items
+  statusBarQuickRun = window.createStatusBarItem(StatusBarAlignment.Left, 100);
+  statusBarFavorites = window.createStatusBarItem(StatusBarAlignment.Left, 99);
+  statusBarRecent = window.createStatusBarItem(StatusBarAlignment.Left, 98);
+
+  // Configure Quick Run button
+  statusBarQuickRun.text = '$(search) Quick Run';
+  statusBarQuickRun.tooltip = 'Quick Command Picker - Search and execute commands instantly';
+  statusBarQuickRun.command = 'dotcommand.quickCommandPicker';
+  statusBarQuickRun.show();
+
+  // Configure Favorites button
+  updateStatusBarFavorites();
+
+  // Configure Recent button
+  updateStatusBarRecent();
+
+  // Add to context subscriptions
+  context.subscriptions.push(statusBarQuickRun);
+  context.subscriptions.push(statusBarFavorites);
+  context.subscriptions.push(statusBarRecent);
+
+  // Update status bar when commands change
+  const updateStatusBar = () => {
+    updateStatusBarFavorites();
+    updateStatusBarRecent();
+  };
+
+  // Listen for command changes (refresh tree view triggers this)
+  const treeViewDisposable = treeView.onDidChangeVisibility(updateStatusBar);
+  context.subscriptions.push(treeViewDisposable);
+}
+
+/**
+ * Update the favorites status bar item
+ */
+function updateStatusBarFavorites(): void {
+  const favoriteCommands = storage.getAllCommands().filter(cmd => cmd.isFavorite);
+
+  if (favoriteCommands.length > 0) {
+    statusBarFavorites.text = `$(star) ${favoriteCommands.length}`;
+    statusBarFavorites.tooltip = `Show ${favoriteCommands.length} favorite commands`;
+    statusBarFavorites.command = {
+      command: 'dotcommand.showFavorites',
+      title: 'Show Favorite Commands',
+      arguments: []
+    };
+    statusBarFavorites.show();
+  } else {
+    statusBarFavorites.hide();
+  }
+}
+
+/**
+ * Update the recent commands status bar item
+ */
+function updateStatusBarRecent(): void {
+  // Import dynamically to avoid circular dependencies
+  import('./utils/commandHistory').then(({ getCommandHistoryManager }) => {
+    const historyManager = getCommandHistoryManager();
+    const recentCommands = historyManager.getRecentCommands(5);
+
+    if (recentCommands.length > 0) {
+      statusBarRecent.text = `$(history) ${recentCommands.length}`;
+      statusBarRecent.tooltip = `Show ${recentCommands.length} recent commands`;
+      statusBarRecent.command = {
+        command: 'dotcommand.showRecentCommands',
+        title: 'Show Recent Commands',
+        arguments: []
+      };
+      statusBarRecent.show();
+    } else {
+      statusBarRecent.hide();
+    }
+  }).catch(error => {
+    console.error('Error updating status bar recent:', error);
+  });
+}
+
+/**
  * Handle terminal command execution - auto-save meaningful commands
  */
 async function handleTerminalCommand(event: TerminalShellExecutionStartEvent): Promise<void> {
@@ -509,7 +413,7 @@ async function handleTerminalCommand(event: TerminalShellExecutionStartEvent): P
       commandText = commandLineValue;
     } else if (commandLineValue && typeof commandLineValue === 'object') {
       // Handle object format with value property
-      commandText = (commandLineValue as any).value || '';
+      commandText = (commandLineValue as { value: string }).value || '';
     }
 
     console.log('Raw command line:', commandText);
@@ -528,8 +432,9 @@ async function handleTerminalCommand(event: TerminalShellExecutionStartEvent): P
     }
 
     // Extract the actual command (remove shell prompt and arguments)
-    const { cleanTerminalCommand } = await import('./commandCleaning');
-    const cleanedCommand = cleanTerminalCommand(commandLine);
+    const { cleanTerminalCommand, getActiveShellType } = await import('./commands/cleaning');
+    const shellType = getActiveShellType();
+    const cleanedCommand = cleanTerminalCommand(commandLine, shellType);
     console.log('Cleaned command:', cleanedCommand);
 
     // Get minimum length from configuration
@@ -555,7 +460,7 @@ async function handleTerminalCommand(event: TerminalShellExecutionStartEvent): P
     }
 
     // Auto-detect category for terminal commands, default to 'auto-terminal'
-    const { detectCommandCategory } = await import('./commandDetection');
+    const { detectCommandCategory } = await import('./commands/detection');
     let detectedCategory = detectCommandCategory(cleanedCommand);
     if (!detectedCategory) {
       detectedCategory = 'auto-terminal';
@@ -564,7 +469,7 @@ async function handleTerminalCommand(event: TerminalShellExecutionStartEvent): P
     // Auto-save the command
     try {
       console.log('Attempting to save command:', cleanedCommand, 'Category:', detectedCategory);
-      const savedCommand = await storage.saveCommand({
+      await storage.saveCommand({
         command: cleanedCommand,
         category: detectedCategory,
         source: 'auto-terminal'
