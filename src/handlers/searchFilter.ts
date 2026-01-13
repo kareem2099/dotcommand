@@ -30,6 +30,23 @@ export function initializeSearchFilterHandlers(
 }
 
 /**
+ * Helper to update view message based on filter state
+ */
+function updateViewMessage(view: TreeView<TreeItem>, state: SearchFilterState) {
+    if (state.isActive) {
+        if (state.searchText) {
+            view.message = `🔍 "${state.searchText}"`;
+        } else if (state.selectedCategories.length > 0) {
+            view.message = `🏷️ ${state.selectedCategories.length} Categories`;
+        } else {
+            view.message = 'Filter Active';
+        }
+    } else {
+        view.message = undefined; // Clear the message
+    }
+}
+
+/**
  * Handle search/filter for prepared commands
  */
 export async function handleSearchPreparedCommands(): Promise<void> {
@@ -38,6 +55,7 @@ export async function handleSearchPreparedCommands(): Promise<void> {
 
   if (newState) {
     preparedTreeDataProvider.setSearchFilterState(newState);
+    updateViewMessage(preparedTreeView, newState);
   }
 }
 
@@ -50,6 +68,7 @@ export async function handleSearchMyCommands(): Promise<void> {
 
   if (newState) {
     myCommandsTreeDataProvider.setSearchFilterState(newState);
+    updateViewMessage(myCommandsTreeView, newState);
   }
 }
 
@@ -58,6 +77,7 @@ export async function handleSearchMyCommands(): Promise<void> {
  */
 export async function handleClearPreparedFilters(): Promise<void> {
   preparedTreeDataProvider.clearSearchFilter();
+  preparedTreeView.message = undefined; // Clear message directly
   window.showInformationMessage('Cleared all filters for Prepared Commands');
 }
 
@@ -66,6 +86,7 @@ export async function handleClearPreparedFilters(): Promise<void> {
  */
 export async function handleClearMyCommandsFilters(): Promise<void> {
   myCommandsTreeDataProvider.clearSearchFilter();
+  myCommandsTreeView.message = undefined; // Clear message directly
   window.showInformationMessage('Cleared all filters for My Commands');
 }
 
@@ -77,7 +98,7 @@ async function showSearchFilterInterface(
   currentState: SearchFilterState
 ): Promise<SearchFilterState | undefined> {
   const continueLoop = true;
-  let state = { ...currentState };
+  const state = { ...currentState };
 
   while (continueLoop) {
     const options: SearchFilterQuickPickItem[] = [

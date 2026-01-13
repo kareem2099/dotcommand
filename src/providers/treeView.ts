@@ -2,6 +2,7 @@ import { TreeDataProvider, TreeItem, TreeItemCollapsibleState, Event, EventEmitt
 import { CommandStorage } from '../storage/storage';
 import { SavedCommand } from '../utils/types';
 import { getPreparedCommandCategories, getPreparedCommandsForCategory } from '../commands/prepared';
+import { getTemplateManager } from '../utils/commandTemplates';
 import {
   SearchFilterState,
   DEFAULT_SEARCH_FILTER_STATE,
@@ -22,6 +23,17 @@ export class CommandsTreeDataProvider implements TreeDataProvider<TreeItem> {
   constructor(storage: CommandStorage) {
     this.storage = storage;
     this._searchFilterState = loadFilterState(STORAGE_KEYS.MY_COMMANDS_FILTER);
+
+    // Enhanced file system monitoring for Smart Context Awareness
+    const watcher = workspace.createFileSystemWatcher('**/*');
+    watcher.onDidCreate(() => this.refreshContextAndTree());
+    watcher.onDidDelete(() => this.refreshContextAndTree());
+
+    // Workspace folder changes
+    workspace.onDidChangeWorkspaceFolders(() => this.refreshContextAndTree());
+
+    // Force refresh on startup (nuclear option for reliability!)
+    setTimeout(() => this.refreshContextAndTree(), 1000);
   }
 
   /**
@@ -100,6 +112,21 @@ export class CommandsTreeDataProvider implements TreeDataProvider<TreeItem> {
   }
 
   /**
+   * Refresh context detection and tree view when files change
+   */
+  public refreshContextAndTree(): void {
+    console.log('🔄 Refreshing Context and Tree...'); // Debug log
+    try {
+      const templateManager = getTemplateManager();
+      templateManager.refreshContext(); // Invalidate cache for immediate re-scan
+      this.refresh(); // Refresh the tree view
+      console.log('✅ Context and Tree refreshed successfully'); // Debug log
+    } catch (error) {
+      console.error('❌ Error refreshing context and tree:', error);
+    }
+  }
+
+  /**
    * Get tree item for element
    */
   getTreeItem(element: TreeItem): TreeItem {
@@ -109,10 +136,38 @@ export class CommandsTreeDataProvider implements TreeDataProvider<TreeItem> {
   /**
    * Get children for element
    */
-  getChildren(element?: TreeItem): ProviderResult<TreeItem[]> {
+  async getChildren(element?: TreeItem): Promise<TreeItem[]> {
     if (!element) {
       // Root level - show categories and commands
-      return this.getRootItems();
+      return await this.getRootItems();
+    }
+
+    // Handle suggested templates expansion
+    if (element.contextValue === 'suggestionGroup') {
+      try {
+        const templateManager = getTemplateManager();
+        const suggestions = await templateManager.getSuggestedTemplates(5);
+
+        return suggestions.map(template => {
+          const item = new TreeItem(template.name);
+          item.description = `(Score: ${template.relevanceScore})`;
+          item.tooltip = `${template.description}\n\nCommand: ${template.template}`;
+          item.iconPath = new ThemeIcon('lightbulb');
+          item.contextValue = 'commandTemplate';
+
+          // Execute template on click
+          item.command = {
+            command: 'dotcommand.executeCommandTemplate',
+            title: 'Execute Template',
+            arguments: [template.id]
+          };
+
+          return item;
+        });
+      } catch (error) {
+        console.error('Error loading suggested templates:', error);
+        return [];
+      }
     }
 
     // Handle favorites category
@@ -227,11 +282,28 @@ export class CommandsTreeDataProvider implements TreeDataProvider<TreeItem> {
   /**
    * Get root level items (categories and commands)
    */
-  private getRootItems(): TreeItem[] {
+  private async getRootItems(): Promise<TreeItem[]> {
     const commands = this.storage.getAllCommands();
     const items: TreeItem[] = [];
 
-    if (commands.length === 0) {
+    // ⚡ FIRST: Add suggested templates section if available
+    try {
+      const templateManager = getTemplateManager();
+      const suggestions = await templateManager.getSuggestedTemplates(5);
+
+      if (suggestions.length > 0) {
+        const suggestionItem = new TreeItem('⚡ Suggested for Workspace', TreeItemCollapsibleState.Expanded);
+        suggestionItem.contextValue = 'suggestionGroup';
+        suggestionItem.description = 'Smart Context';
+        suggestionItem.tooltip = 'Commands suggested based on your project files';
+        suggestionItem.iconPath = new ThemeIcon('lightbulb');
+        items.push(suggestionItem);
+      }
+    } catch (error) {
+      console.error('Error fetching suggestions for tree:', error);
+    }
+
+    if (commands.length === 0 && items.length === 0) {
       // Show welcome message when no commands
       const welcomeItem = new TreeItem('No commands saved yet');
       welcomeItem.description = 'Use Ctrl+Shift+S to save your first command';

@@ -102,6 +102,17 @@ export class TemplateManagerWebview {
                         </div>
                     </div>
 
+                    <!-- Suggested Templates Section -->
+                    <div class="suggested-section" id="suggestedSection" style="display: none;">
+                        <div class="suggested-header">
+                            <h2>⚡ Suggested for this Project</h2>
+                            <span class="suggested-subtitle">Contextually relevant commands based on your project files</span>
+                        </div>
+                        <div class="suggested-templates" id="suggestedTemplates">
+                            <!-- Suggested templates will be populated by JavaScript -->
+                        </div>
+                    </div>
+
                     <div class="search-container">
                         <input type="text" class="search-input" id="searchInput" placeholder="Search templates...">
                     </div>
@@ -161,6 +172,55 @@ export class TemplateManagerWebview {
                     </div>
                 </div>
 
+                <!-- Variable Modal -->
+                <div class="modal" id="variableModal" style="z-index: 2000;">
+                    <div class="modal-content small-modal">
+                        <div class="modal-header">
+                            <h2 class="modal-title" id="variableModalTitle">Add Variable</h2>
+                            <button type="button" class="modal-close" id="variableModalClose">&times;</button>
+                        </div>
+
+                        <form id="variableForm">
+                            <div class="form-group">
+                                <label class="form-label" for="variableName">Variable Name *</label>
+                                <input type="text" class="form-input" id="variableName" placeholder="e.g., branch_name" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="variableDesc">Description</label>
+                                <input type="text" class="form-input" id="variableDesc" placeholder="What is this for?">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="variableType">Input Type</label>
+                                <select class="form-input form-select" id="variableType">
+                                    <option value="text">Text Input (Default)</option>
+                                    <option value="git-branch">🌿 Git Branch List</option>
+                                    <option value="package">📦 NPM Package List</option>
+                                    <option value="file">📄 File Picker</option>
+                                    <option value="folder">📂 Folder Picker</option>
+                                    <option value="dropdown">list Custom Dropdown</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group" id="dropdownOptionsGroup" style="display: none;">
+                                <label class="form-label" for="variableOptions">Options (comma separated)</label>
+                                <input type="text" class="form-input" id="variableOptions" placeholder="dev, prod, staging">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="variableDefault">Default Value</label>
+                                <input type="text" class="form-input" id="variableDefault">
+                            </div>
+
+                            <div class="form-group actions-row">
+                                <button type="button" class="btn primary" id="saveVariableBtn">Add</button>
+                                <button type="button" class="btn" id="cancelVariableBtn">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
                 <script nonce="${nonce}" src="${scriptUri}"></script>
             </body>
             </html>`;
@@ -193,6 +253,15 @@ export class TemplateManagerWebview {
                         break;
                     }
 
+                    case 'loadSuggestedTemplates': {
+                        const suggestedTemplates = await templateManager.getSuggestedTemplates(6); // Top 6 suggestions
+                        this.panel!.webview.postMessage({
+                            type: 'suggestedTemplatesLoaded',
+                            suggestedTemplates: suggestedTemplates
+                        });
+                        break;
+                    }
+
                     case 'saveTemplate': {
                         const template = await templateManager.createTemplate(message.template);
                         this.panel!.webview.postMessage({
@@ -214,6 +283,31 @@ export class TemplateManagerWebview {
                                 type: 'error',
                                 message: 'Template not found'
                             });
+                        }
+                        break;
+                    }
+
+                    case 'confirmDelete': {
+                        const result = await window.showWarningMessage(
+                            'Are you sure you want to delete this template?',
+                            { modal: true },
+                            'Delete',
+                            'Cancel'
+                        );
+
+                        if (result === 'Delete') {
+                            const deleted = await templateManager.deleteTemplate(message.templateId);
+                            if (deleted) {
+                                this.panel!.webview.postMessage({
+                                    type: 'templateDeleted',
+                                    templateId: message.templateId
+                                });
+                            } else {
+                                this.panel!.webview.postMessage({
+                                    type: 'error',
+                                    message: 'Template not found'
+                                });
+                            }
                         }
                         break;
                     }

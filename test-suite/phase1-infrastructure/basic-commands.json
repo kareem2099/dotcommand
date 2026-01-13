@@ -1,0 +1,23 @@
+{
+  "commands": [
+    {
+      "command": "ls -la",
+      "category": "System",
+      "name": "List Files Detailed",
+      "timestamp": 1672531200000
+    },
+    {
+      "command": "pwd",
+      "category": "System",
+      "name": "Print Working Directory",
+      "timestamp": 1672531300000
+    },
+    {
+      "command": "git status",
+      "category": "Git",
+      "name": "Git Status",
+      "timestamp": 1672531400000
+    }
+  ],
+  "description": "Basic command storage test data for Phase 1 infrastructure testing"
+}

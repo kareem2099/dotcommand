@@ -1,18 +1,29 @@
-import { ExtensionContext, window, commands } from 'vscode';
+import { ExtensionContext, window, commands, workspace, OpenDialogOptions } from 'vscode';
 import { CommandStorage } from '../storage/storage';
 import { getTerminalManager } from './terminalManager';
 import { getCommandHistoryManager } from './commandHistory';
+import { getPredefinedCategories as getPredefinedTemplateCategories } from './predefinedTemplates';
 
 export interface TemplateVariable {
   name: string;
   description: string;
   defaultValue?: string;
   required?: boolean;
+  type?: 'text' | 'dropdown' | 'file' | 'folder' | 'git-branch' | 'package';
+  options?: string[]; // For dropdown type
+  dynamicOptions?: 'git-branches' | 'workspace-files' | 'package-dependencies'; // For dynamic dropdowns
   validation?: {
     pattern?: string;
     message?: string;
     type?: 'string' | 'number' | 'email' | 'path' | 'url';
   };
+}
+
+export interface ContextTrigger {
+  type: 'fileExists' | 'fileContains' | 'directoryExists';
+  path: string;
+  pattern?: string; // for fileContains type
+  weight: number; // priority scoring (higher = more relevant)
 }
 
 export interface CommandTemplate {
@@ -23,6 +34,7 @@ export interface CommandTemplate {
   category: string;
   variables: TemplateVariable[];
   tags?: string[];
+  contextTriggers?: ContextTrigger[]; // NEW: Smart context awareness
   createdAt: number;
   updatedAt: number;
   usageCount?: number;
@@ -36,6 +48,164 @@ export interface TemplateCategory {
   templates: CommandTemplate[];
 }
 
+export interface SuggestedTemplate extends CommandTemplate {
+  relevanceScore: number;
+  matchedTriggers: ContextTrigger[];
+}
+
+/**
+ * Context detector for smart template suggestions
+ */
+export class ContextDetector {
+  private workspaceFiles: string[] = [];
+  private fileContents: Map<string, string> = new Map();
+  private lastScanTime: number = 0;
+  private readonly SCAN_CACHE_DURATION = 30000; // 30 seconds
+
+  /**
+   * Scan workspace for context clues
+   */
+  async scanWorkspace(): Promise<void> {
+    const now = Date.now();
+    if (now - this.lastScanTime < this.SCAN_CACHE_DURATION) {
+      return; // Use cached results
+    }
+
+    try {
+      const workspaceFolders = workspace.workspaceFolders;
+      if (!workspaceFolders) return;
+
+      this.workspaceFiles = [];
+      this.fileContents.clear();
+
+      // Scan root directory files
+      const rootFiles = await workspace.findFiles('**/*', '**/node_modules/**', 100);
+
+      for (const fileUri of rootFiles) {
+        const relativePath = workspace.asRelativePath(fileUri);
+        this.workspaceFiles.push(relativePath);
+
+        // Cache content for important files
+        if (this.isImportantFile(relativePath)) {
+          try {
+            const content = await workspace.fs.readFile(fileUri);
+            this.fileContents.set(relativePath, content.toString());
+          } catch {
+            // Ignore read errors
+          }
+        }
+      }
+
+      this.lastScanTime = now;
+    } catch (error) {
+      console.warn('Failed to scan workspace:', error);
+    }
+  }
+
+  /**
+   * Check if file exists in workspace
+   */
+  fileExists(path: string): boolean {
+    return this.workspaceFiles.includes(path);
+  }
+
+  /**
+   * Check if directory exists
+   */
+  directoryExists(path: string): boolean {
+    return this.workspaceFiles.some(file => file.startsWith(path + '/'));
+  }
+
+  /**
+   * Check if file contains pattern
+   */
+  fileContains(path: string, pattern: string): boolean {
+    const content = this.fileContents.get(path);
+    if (!content) return false;
+    return content.includes(pattern);
+  }
+
+  /**
+   * Determine if file is important for context detection
+   */
+  private isImportantFile(path: string): boolean {
+    const importantFiles = [
+      'package.json',
+      'Dockerfile',
+      'docker-compose.yml',
+      'requirements.txt',
+      'pyproject.toml',
+      'Cargo.toml',
+      'go.mod',
+      '.git/config',
+      'composer.json',
+      'angular.json',
+      'tsconfig.json'
+    ];
+
+    return importantFiles.includes(path) ||
+           path.endsWith('.csproj') ||
+           path.endsWith('.fsproj') ||
+           path.includes('package-lock.json') ||
+           path.includes('yarn.lock');
+  }
+
+  /**
+   * Detect project technologies
+   */
+  detectTechnologies(): string[] {
+    const technologies: string[] = [];
+
+    if (this.fileExists('package.json')) {
+      technologies.push('nodejs', 'npm');
+      const packageJson = this.fileContents.get('package.json');
+      if (packageJson) {
+        if (packageJson.includes('"react"')) technologies.push('react');
+        if (packageJson.includes('"vue"')) technologies.push('vue');
+        if (packageJson.includes('"angular')) technologies.push('angular');
+        if (packageJson.includes('"typescript"')) technologies.push('typescript');
+      }
+    }
+
+    if (this.fileExists('Dockerfile') || this.fileExists('docker-compose.yml')) {
+      technologies.push('docker');
+    }
+
+    if (this.fileExists('.git') || this.directoryExists('.git')) {
+      technologies.push('git');
+    }
+
+    if (this.fileExists('requirements.txt') || this.fileExists('pyproject.toml')) {
+      technologies.push('python');
+    }
+
+    if (this.fileExists('go.mod')) {
+      technologies.push('go');
+    }
+
+    if (this.fileExists('Cargo.toml')) {
+      technologies.push('rust');
+    }
+
+    if (this.fileExists('composer.json')) {
+      technologies.push('php');
+    }
+
+    if (this.workspaceFiles.some(f => f.endsWith('.csproj') || f.endsWith('.fsproj'))) {
+      technologies.push('dotnet');
+    }
+
+    return technologies;
+  }
+
+  /**
+   * Invalidate cache to force immediate re-scan
+   */
+  invalidateCache(): void {
+    this.lastScanTime = 0; // Reset scan time to force re-scan
+  }
+}
+
 /**
  * Command template manager for dynamic command execution
  */
@@ -43,10 +213,12 @@ export class CommandTemplateManager {
   private static readonly STORAGE_KEY = 'dotcommand.templates';
   private context: ExtensionContext;
   private storage: CommandStorage;
+  private contextDetector: ContextDetector;
 
   constructor(context: ExtensionContext, storage: CommandStorage) {
     this.context = context;
     this.storage = storage;
+    this.contextDetector = new ContextDetector();
   }
 
   /**
@@ -73,10 +245,18 @@ export class CommandTemplateManager {
   }
 
   /**
-   * Get template by ID
+   * Get template by ID - Hybrid Lookup System
+   * 1. Check User Templates (Stored) first - allows overrides/customization
+   * 2. Check Predefined Templates (Hardcoded) - base functionality + instant updates
    */
   getTemplateById(id: string): CommandTemplate | undefined {
-    return this.getAllTemplates().find(template => template.id === id);
+    // 1. Check User Templates (Stored) first - allows user overrides
+    const userTemplate = this.getAllTemplates().find(template => template.id === id);
+    if (userTemplate) return userTemplate;
+
+    // 2. Check Predefined Templates (Hardcoded) - instant updates, no zombie templates
+    const predefinedTemplates = this.getPredefinedCategories().flatMap(category => category.templates);
+    return predefinedTemplates.find(template => template.id === id);
   }
 
   /**
@@ -205,234 +385,251 @@ export class CommandTemplateManager {
     const prompt = variable.description + (variable.defaultValue ? ` (${variable.defaultValue})` : '');
     const placeholder = variable.defaultValue || variable.name;
 
-    let value: string | undefined;
+    // Handle dynamic variable types
+    switch (variable.type) {
+      case 'git-branch':
+        return await this.promptForGitBranch(variable);
 
-    // Handle different validation types
-    if (variable.validation?.type === 'number') {
-      // For numbers, we could add special handling, but for now use text input
-      value = await window.showInputBox({
-        prompt,
-        placeHolder: placeholder,
-        value: variable.defaultValue,
-        validateInput: (input) => {
-          if (variable.required && !input.trim()) {
-            return 'This field is required';
-          }
-          if (variable.validation?.pattern && !new RegExp(variable.validation.pattern).test(input)) {
-            return variable.validation.message || 'Invalid format';
-          }
-          return null;
-        }
-      });
-    } else {
-      value = await window.showInputBox({
-        prompt,
-        placeHolder: placeholder,
-        value: variable.defaultValue,
-        validateInput: (input) => {
-          if (variable.required && !input.trim()) {
-            return 'This field is required';
-          }
-          if (variable.validation?.type === 'email' && input && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input)) {
-            return 'Please enter a valid email address';
-          }
-          if (variable.validation?.type === 'url' && input && !/^https?:\/\/.+/.test(input)) {
-            return 'Please enter a valid URL starting with http:// or https://';
-          }
-          if (variable.validation?.pattern && !new RegExp(variable.validation.pattern).test(input)) {
-            return variable.validation.message || 'Invalid format';
-          }
-          return null;
-        }
-      });
+      case 'dropdown':
+        return await this.promptForDropdown(variable);
+
+      case 'file':
+        return await this.promptForFile(variable);
+
+      case 'folder':
+        return await this.promptForFolder(variable);
+
+      case 'package':
+        return await this.promptForPackage(variable);
+
+      default:
+        // Handle text input with validation
+        return await this.promptForTextInput(variable, prompt, placeholder);
+    }
+  }
+
+  /**
+   * Prompt for Git branch selection
+   */
+  private async promptForGitBranch(variable: TemplateVariable): Promise<string | undefined> {
+    const { getGitBranchDetector } = await import('./gitBranchDetector');
+    const branchDetector = getGitBranchDetector();
+
+    // Check if it's a Git repository
+    const isGitRepo = await branchDetector.isGitRepository();
+    if (!isGitRepo) {
+      // Fall back to text input
+      return await this.promptForTextInput(variable, variable.description, variable.defaultValue || 'main');
     }
 
-    return value;
+    // Get available branches
+    const branches = await branchDetector.getBranches();
+    const currentBranch = await branchDetector.getCurrentBranch();
+
+    if (branches.length === 0) {
+      // Fall back to text input
+      return await this.promptForTextInput(variable, variable.description, currentBranch || variable.defaultValue || 'main');
+    }
+
+    // Show quick pick with branches
+    const selected = await window.showQuickPick(
+      branches.map(branch => ({
+        label: branch,
+        description: branch === currentBranch ? '(current)' : undefined
+      })),
+      {
+        placeHolder: variable.description,
+        matchOnDescription: true
+      }
+    );
+
+    return selected?.label;
+  }
+
+  /**
+   * Prompt for dropdown selection
+   */
+  private async promptForDropdown(variable: TemplateVariable): Promise<string | undefined> {
+    let options: string[] = variable.options || [];
+    let quickPickItems: { label: string; description?: string }[] = [];
+
+    // Handle dynamic options
+    if (variable.dynamicOptions) {
+      switch (variable.dynamicOptions) {
+        case 'git-branches': {
+          const { getGitBranchDetector } = await import('./gitBranchDetector');
+          const branchDetector = getGitBranchDetector();
+          const branches = await branchDetector.getBranches();
+          const currentBranch = await branchDetector.getCurrentBranch();
+
+          quickPickItems = branches.map(branch => ({
+            label: branch,
+            description: branch === currentBranch ? '(current)' : undefined
+          }));
+          break;
+        }
+
+        case 'package-dependencies': {
+          options = await this.getPackageDependencies();
+          quickPickItems = options.map(option => ({ label: option }));
+          break;
+        }
+
+        case 'workspace-files': {
+          options = await this.getWorkspaceFiles();
+          quickPickItems = options.map(option => ({ label: option }));
+          break;
+        }
+      }
+    } else {
+      quickPickItems = options.map(option => ({ label: option }));
+    }
+
+    if (quickPickItems.length === 0) {
+      // Fall back to text input
+      return await this.promptForTextInput(variable, variable.description, variable.defaultValue || variable.name );
+    }
+
+    const selected = await window.showQuickPick(quickPickItems, {
+      placeHolder: variable.description,
+      matchOnDescription: true
+    });
+
+    return selected?.label;
+  }
+
+  /**
+   * Unified helper for native file/folder picker
+   */
+  private async resolveFileSystemResource(type: 'file' | 'folder', title: string): Promise<string | undefined> {
+    const workspaceFolder = workspace.workspaceFolders?.[0];
+
+    const options: OpenDialogOptions = {
+      canSelectFiles: type === 'file',
+      canSelectFolders: type === 'folder',
+      canSelectMany: false,
+      openLabel: 'Select',
+      title: title,
+      defaultUri: workspaceFolder?.uri
+    };
+
+    const uris = await window.showOpenDialog(options);
+
+    if (uris && uris.length > 0) {
+      // Returns relative path if inside workspace, otherwise path as is
+      return workspace.asRelativePath(uris[0]);
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Prompt for file selection using native picker
+   */
+  private async promptForFile(variable: TemplateVariable): Promise<string | undefined> {
+    return this.resolveFileSystemResource('file', variable.description || 'Select File');
+  }
+
+  /**
+   * Prompt for folder selection using native picker
+   */
+  private async promptForFolder(variable: TemplateVariable): Promise<string | undefined> {
+    return this.resolveFileSystemResource('folder', variable.description || 'Select Folder');
+  }
+
+  /**
+   * Prompt for package name
+   */
+  private async promptForPackage(variable: TemplateVariable): Promise<string | undefined> {
+    const dependencies = await this.getPackageDependencies();
+
+    if (dependencies.length === 0) {
+      return await this.promptForTextInput(variable, variable.description, variable.defaultValue || variable.name );
+    }
+
+    const selected = await window.showQuickPick(
+      dependencies.map(dep => ({ label: dep })),
+      {
+        placeHolder: variable.description || 'Select a package',
+        matchOnDescription: true
+      }
+    );
+
+    return selected?.label;
+  }
+
+  /**
+   * Get package dependencies from package.json
+   */
+  private async getPackageDependencies(): Promise<string[]> {
+    try {
+      const workspaceFolder = workspace.workspaceFolders?.[0];
+      if (!workspaceFolder) return [];
+
+      const packageJsonUri = workspace.findFiles('package.json', null, 1);
+      const files = await packageJsonUri;
+
+      if (files.length === 0) return [];
+
+      const content = await workspace.fs.readFile(files[0]);
+      const packageJson = JSON.parse(content.toString());
+
+      const dependencies = [
+        ...Object.keys(packageJson.dependencies || {}),
+        ...Object.keys(packageJson.devDependencies || {})
+      ];
+
+      return dependencies.sort();
+    } catch (error) {
+      console.warn('Error reading package.json:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get workspace files
+   */
+  private async getWorkspaceFiles(): Promise<string[]> {
+    try {
+      const files = await workspace.findFiles('**/*', '**/node_modules/**', 100);
+      return files.map(uri => workspace.asRelativePath(uri)).sort();
+    } catch (error) {
+      console.warn('Error getting workspace files:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Prompt for text input with validation
+   */
+  private async promptForTextInput(variable: TemplateVariable, prompt: string, placeholder: string): Promise<string | undefined> {
+    return await window.showInputBox({
+      prompt,
+      placeHolder: placeholder,
+      value: variable.defaultValue || '',
+      validateInput: (input) => {
+        if (variable.required && !input.trim()) {
+          return 'This field is required';
+        }
+        if (variable.validation?.type === 'email' && input && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input)) {
+          return 'Please enter a valid email address';
+        }
+        if (variable.validation?.type === 'url' && input && !/^https?:\/\/.+/.test(input)) {
+          return 'Please enter a valid URL starting with http:// or https://';
+        }
+        if (variable.validation?.pattern && !new RegExp(variable.validation.pattern).test(input)) {
+          return variable.validation.message || 'Invalid format';
+        }
+        return null;
+      }
+    });
   }
 
   /**
    * Get predefined template categories with sample templates
    */
   getPredefinedCategories(): TemplateCategory[] {
-    return [
-      {
-        name: 'Git',
-        description: 'Version control operations',
-        icon: 'git-branch',
-        templates: [
-          {
-            id: 'git-commit',
-            name: 'Commit with Message',
-            description: 'Commit staged changes with a custom message',
-            template: 'git commit -m "{message}"',
-            category: 'Git',
-            variables: [
-              {
-                name: 'message',
-                description: 'Commit message',
-                defaultValue: 'updates',
-                required: true
-              }
-            ],
-            tags: ['commit', 'version-control'],
-            createdAt: Date.now(),
-            updatedAt: Date.now()
-          },
-          {
-            id: 'git-branch-create',
-            name: 'Create Branch',
-            description: 'Create and switch to a new branch',
-            template: 'git checkout -b {branch_name}',
-            category: 'Git',
-            variables: [
-              {
-                name: 'branch_name',
-                description: 'Branch name (e.g., feature/new-feature)',
-                defaultValue: 'feature/new-feature',
-                required: true,
-                validation: {
-                  pattern: '^[a-zA-Z0-9-_/]+$',
-                  message: 'Branch name can only contain letters, numbers, hyphens, underscores, and slashes'
-                }
-              }
-            ],
-            tags: ['branch', 'create'],
-            createdAt: Date.now(),
-            updatedAt: Date.now()
-          },
-          {
-            id: 'git-push-branch',
-            name: 'Push Branch',
-            description: 'Push commits to a specific remote branch',
-            template: 'git push origin {branch}',
-            category: 'Git',
-            variables: [
-              {
-                name: 'branch',
-                description: 'Branch name to push',
-                defaultValue: 'main',
-                required: true
-              }
-            ],
-            tags: ['push', 'remote'],
-            createdAt: Date.now(),
-            updatedAt: Date.now()
-          }
-        ]
-      },
-      {
-        name: 'Docker',
-        description: 'Container operations',
-        icon: 'docker',
-        templates: [
-          {
-            id: 'docker-build',
-            name: 'Build Image',
-            description: 'Build a Docker image with custom name',
-            template: 'docker build -t {image_name} .',
-            category: 'Docker',
-            variables: [
-              {
-                name: 'image_name',
-                description: 'Image name and tag (e.g., myapp:latest)',
-                defaultValue: 'myapp:latest',
-                required: true,
-                validation: {
-                  pattern: '^[a-zA-Z0-9._-]+:[a-zA-Z0-9._-]+$',
-                  message: 'Image name should be in format: name:tag'
-                }
-              }
-            ],
-            tags: ['build', 'image'],
-            createdAt: Date.now(),
-            updatedAt: Date.now()
-          },
-          {
-            id: 'docker-run-port',
-            name: 'Run with Port',
-            description: 'Run container with port mapping',
-            template: 'docker run -d -p {host_port}:{container_port} {image}',
-            category: 'Docker',
-            variables: [
-              {
-                name: 'host_port',
-                description: 'Host port number',
-                defaultValue: '3000',
-                required: true,
-                validation: {
-                  type: 'number',
-                  pattern: '^[0-9]+$',
-                  message: 'Port must be a number'
-                }
-              },
-              {
-                name: 'container_port',
-                description: 'Container port number',
-                defaultValue: '3000',
-                required: true,
-                validation: {
-                  type: 'number',
-                  pattern: '^[0-9]+$',
-                  message: 'Port must be a number'
-                }
-              },
-              {
-                name: 'image',
-                description: 'Docker image name',
-                defaultValue: 'myapp:latest',
-                required: true
-              }
-            ],
-            tags: ['run', 'port', 'container'],
-            createdAt: Date.now(),
-            updatedAt: Date.now()
-          }
-        ]
-      },
-      {
-        name: 'NPM',
-        description: 'Node.js package management',
-        icon: 'npm',
-        templates: [
-          {
-            id: 'npm-install-package',
-            name: 'Install Package',
-            description: 'Install a specific NPM package',
-            template: 'npm install {package_name}',
-            category: 'NPM',
-            variables: [
-              {
-                name: 'package_name',
-                description: 'Package name (e.g., lodash, react)',
-                defaultValue: 'lodash',
-                required: true
-              }
-            ],
-            tags: ['install', 'package'],
-            createdAt: Date.now(),
-            updatedAt: Date.now()
-          },
-          {
-            id: 'npm-run-script',
-            name: 'Run Script',
-            description: 'Execute a custom npm script',
-            template: 'npm run {script_name}',
-            category: 'NPM',
-            variables: [
-              {
-                name: 'script_name',
-                description: 'Script name from package.json',
-                defaultValue: 'dev',
-                required: true
-              }
-            ],
-            tags: ['script', 'run'],
-            createdAt: Date.now(),
-            updatedAt: Date.now()
-          }
-        ]
-      }
-    ];
+    return getPredefinedTemplateCategories();
   }
 
   /**
@@ -448,6 +645,79 @@ export class CommandTemplateManager {
       template.template.toLowerCase().includes(lowerQuery) ||
       (template.tags && template.tags.some(tag => tag.toLowerCase().includes(lowerQuery)))
     );
+  }
+
+  /**
+   * Get contextually suggested templates for the current workspace
+   */
+  async getSuggestedTemplates(limit: number = 10): Promise<SuggestedTemplate[]> {
+    // Scan workspace for context
+    await this.contextDetector.scanWorkspace();
+
+    const allTemplates = [
+      ...this.getAllTemplates(),
+      ...this.getPredefinedCategories().flatMap(cat => cat.templates)
+    ];
+
+    const suggestedTemplates: SuggestedTemplate[] = [];
+
+    for (const template of allTemplates) {
+      if (!template.contextTriggers || template.contextTriggers.length === 0) {
+        continue; // Skip templates without context triggers
+      }
+
+      const matchedTriggers: ContextTrigger[] = [];
+      let totalScore = 0;
+
+      for (const trigger of template.contextTriggers) {
+        let triggerMatched = false;
+
+        switch (trigger.type) {
+          case 'fileExists':
+            triggerMatched = this.contextDetector.fileExists(trigger.path);
+            break;
+          case 'directoryExists':
+            triggerMatched = this.contextDetector.directoryExists(trigger.path);
+            break;
+          case 'fileContains':
+            triggerMatched = this.contextDetector.fileContains(trigger.path, trigger.pattern || '');
+            break;
+        }
+
+        if (triggerMatched) {
+          matchedTriggers.push(trigger);
+          totalScore += trigger.weight;
+        }
+      }
+
+      if (matchedTriggers.length > 0) {
+        suggestedTemplates.push({
+          ...template,
+          relevanceScore: totalScore,
+          matchedTriggers
+        });
+      }
+    }
+
+    // Sort by relevance score (highest first) and return top results
+    return suggestedTemplates
+      .sort((a, b) => b.relevanceScore - a.relevanceScore)
+      .slice(0, limit);
+  }
+
+  /**
+   * Get detected technologies in the current workspace
+   */
+  async getDetectedTechnologies(): Promise<string[]> {
+    await this.contextDetector.scanWorkspace();
+    return this.contextDetector.detectTechnologies();
+  }
+
+  /**
+   * Refresh context by invalidating cache - forces immediate re-scan
+   */
+  refreshContext(): void {
+    this.contextDetector.invalidateCache();
   }
 
   /**

@@ -36,20 +36,26 @@
             </div>
         </div>
 
+        <div class="suggested-section" id="suggestedSection" style="display: none;">
+            <div class="suggested-header">
+                <h2>⚡ Suggested for this Project</h2>
+                <span class="suggested-subtitle">Contextually relevant commands based on your project files</span>
+            </div>
+            <div class="suggested-templates" id="suggestedTemplates">
+                </div>
+        </div>
+
         <div class="search-container">
             <input type="text" class="search-input" id="searchInput" placeholder="Search templates...">
         </div>
 
         <div class="categories" id="categories">
-            <!-- Categories will be populated by JavaScript -->
-        </div>
+            </div>
 
         <div id="templatesContainer">
-            <!-- Templates will be populated by JavaScript -->
-        </div>
+            </div>
     </div>
 
-    <!-- Create/Edit Template Modal -->
     <div class="modal" id="templateModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -82,14 +88,61 @@
                 <div class="form-group">
                     <label class="form-label">Variables</label>
                     <div class="variables-list" id="variablesList">
-                        <!-- Variables will be populated here -->
-                    </div>
+                        </div>
                     <button type="button" class="btn add-variable" id="addVariableBtn">➕ Add Variable</button>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group actions-row">
                     <button type="submit" class="btn primary" id="saveTemplateBtn">Save Template</button>
                     <button type="button" class="btn" id="cancelBtn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal" id="variableModal" style="z-index: 2000;">
+        <div class="modal-content small-modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="variableModalTitle">Add Variable</h2>
+                <button type="button" class="modal-close" id="variableModalClose">&times;</button>
+            </div>
+
+            <form id="variableForm">
+                <div class="form-group">
+                    <label class="form-label" for="variableName">Variable Name *</label>
+                    <input type="text" class="form-input" id="variableName" placeholder="e.g., branch_name" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="variableDesc">Description</label>
+                    <input type="text" class="form-input" id="variableDesc" placeholder="What is this for?">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="variableType">Input Type</label>
+                    <select class="form-input form-select" id="variableType">
+                        <option value="text">Text Input (Default)</option>
+                        <option value="git-branch">🌿 Git Branch List</option>
+                        <option value="package">📦 NPM Package List</option>
+                        <option value="file">📄 File Picker</option>
+                        <option value="folder">📂 Folder Picker</option>
+                        <option value="dropdown">list Custom Dropdown</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="dropdownOptionsGroup" style="display: none;">
+                    <label class="form-label" for="variableOptions">Options (comma separated)</label>
+                    <input type="text" class="form-input" id="variableOptions" placeholder="dev, prod, staging">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="variableDefault">Default Value</label>
+                    <input type="text" class="form-input" id="variableDefault">
+                </div>
+
+                <div class="form-group actions-row">
+                    <button type="button" class="btn primary" id="saveVariableBtn">Add</button>
+                    <button type="button" class="btn" id="cancelVariableBtn">Cancel</button>
                 </div>
             </form>
         </div>

@@ -1,0 +1,23 @@
+{
+  "name": "test-npm-project",
+  "version": "1.0.0",
+  "description": "Test NPM project for Smart Context Awareness",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node index.js",
+    "build": "echo 'Building...'",
+    "test": "echo 'Testing...'",
+    "lint": "echo 'Linting...'"
+  },
+  "dependencies": {
+    "lodash": "^4.17.21",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "jest": "^29.5.0",
+    "eslint": "^8.40.0"
+  },
+  "keywords": ["test", "npm", "context-awareness"],
+  "author": "Test User",
+  "license": "MIT"
+}

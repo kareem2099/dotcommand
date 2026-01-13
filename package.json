@@ -3,7 +3,7 @@
   "displayName": "DotCommand - Command Manager",
   "publisher": "freerave",
   "description": "Save, view, copy, and manage your frequently used commands in VS Code",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "icon": "assets/icons/icon.png",
   "keywords": [
     "commands",
@@ -15,7 +15,8 @@
     "automation",
     "tools",
     "development",
-    "cli"
+    "cli",
+    "context-aware"
   ],
   "engines": {
     "vscode": "^1.80.0"
@@ -172,6 +173,11 @@
           "type": "boolean",
           "default": true,
           "description": "Sort suggestions by usage frequency"
+        },
+        "dotcommand.suggestions.showStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the top suggested command in the Status Bar"
         }
       }
     },
@@ -317,6 +323,11 @@
         "icon": "$(library)"
       },
       {
+        "command": "dotcommand.refreshTree",
+        "title": "Refresh Commands",
+        "icon": "$(refresh)"
+      },
+      {
         "command": "dotcommand.createCommandTemplate",
         "title": "Create Command Template",
         "icon": "$(add)"
@@ -350,6 +361,12 @@
         "command": "dotcommand.triggerSuggestions",
         "title": "Trigger Command Suggestions (Test)",
         "icon": "$(lightbulb)"
+      },
+      {
+        "command": "dotcommand.quickRun",
+        "title": "Smart Quick Run (Suggested)",
+        "category": "DotCommand",
+        "icon": "$(zap)"
       }
     ],
     "keybindings": [
@@ -455,6 +472,11 @@
         "key": "ctrl+shift+d",
         "mac": "cmd+shift+d",
         "when": "!editorTextFocus"
+      },
+      {
+        "command": "dotcommand.quickRun",
+        "key": "ctrl+alt+space",
+        "mac": "cmd+alt+space"
       }
     ],
     "menus": {
@@ -496,6 +518,11 @@
         },
         {
           "command": "dotcommand.clearMyCommandsFilters",
+          "when": "view == dotcommand.commandsView",
+          "group": "navigation"
+        },
+        {
+          "command": "dotcommand.refreshTree",
           "when": "view == dotcommand.commandsView",
           "group": "navigation"
         },
@@ -597,6 +624,11 @@
         {
           "command": "dotcommand.quickCommandPicker",
           "when": "statusBarItem == dotcommand.quickRun",
+          "group": "navigation@1"
+        },
+        {
+          "command": "dotcommand.quickRun",
+          "when": "statusBarItem == dotcommand.suggestions",
           "group": "navigation@1"
         },
         {
