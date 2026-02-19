@@ -1,5 +1,6 @@
 import { window, workspace, WebviewPanel, Disposable, extensions, Uri } from 'vscode';
 import { readTasksDotCommand } from '../providers/taskProvider';
+import { getWebviewDevScript } from '../utils/logger';
 
 interface DotCommandTask {
   label: string;
@@ -86,7 +87,9 @@ export class TaskManagerWebview {
       const htmlText = new TextDecoder().decode(htmlContent);
       const nonce = getNonce();
       console.log('Generated nonce:', nonce);
-      const result = htmlText.replace('{nonce}', nonce);
+      const result = htmlText
+        .replace('{nonce}', nonce)
+        .replace('</head>', `${getWebviewDevScript(nonce)}\n</head>`);
       console.log('CSP replaced content contains:', result.includes(nonce));
       return result;
       } catch {
@@ -97,7 +100,9 @@ export class TaskManagerWebview {
           const htmlContent = await workspace.fs.readFile(htmlUri);
           const htmlText = new TextDecoder().decode(htmlContent);
           const nonce = getNonce();
-          return htmlText.replace('{nonce}', nonce);
+          return htmlText
+            .replace('{nonce}', nonce)
+            .replace('</head>', `${getWebviewDevScript(nonce)}\n</head>`);
         } catch (devError: unknown) {
           console.error('Could not load from development path:', devError);
           throw devError;

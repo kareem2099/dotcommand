@@ -24,13 +24,29 @@ export class TerminalManager {
   private readonly WARNING_TIME = 2 * 60 * 1000; // 2 minutes before cleanup
 
   // Category configurations for different command types
+  // ORDER MATTERS: first match wins. Keep specific entries before generic ones.
   private readonly categories: CategoryConfig[] = [
-    { name: 'Git', keywords: ['git', 'commit', 'push', 'pull', 'merge', 'branch', 'checkout', 'stash', 'rebase', 'cherry-pick', 'tag'] },
-    { name: 'NPM', keywords: ['npm', 'node', 'yarn', 'pnpm', 'package.json', 'node_modules', 'webpack', 'babel'] },
-    { name: 'Docker', keywords: ['docker', 'docker-compose', 'container', 'image', 'kubectl', 'kubernetes', 'k8s', 'pod', 'deployment'] },
-    { name: 'Python', keywords: ['python', 'pip', 'venv', 'requirements.txt', 'django', 'flask', 'pytest', 'black', 'flake8'] },
-    { name: 'Database', keywords: ['mysql', 'postgresql', 'psql', 'mongo', 'mongodb', 'redis', 'sqlite'] },
-    { name: 'Linux', keywords: ['ls', 'cd', 'mkdir', 'rm', 'cp', 'mv', 'chmod', 'chown', 'grep', 'find', 'cat', 'tail', 'head'] }
+    { name: 'Git',            keywords: ['git', 'commit', 'push', 'pull', 'merge', 'branch', 'checkout', 'stash', 'rebase', 'cherry-pick', 'tag'] },
+    { name: 'NPM',            keywords: ['npm', 'yarn', 'pnpm', 'node_modules', 'webpack', 'babel'] },
+    { name: 'Docker',         keywords: ['docker', 'docker-compose', 'kubectl', 'k8s', 'helm'] },
+    // Rust — MUST be before Go because 'cargo' contains 'go'
+    { name: 'Rust',           keywords: ['cargo'] },
+    { name: 'Python',         keywords: ['python', 'pip', 'venv', 'requirements.txt', 'django', 'flask', 'pytest', 'black', 'flake8'] },
+    // Database — before Go because 'mongo' contains 'go'
+    { name: 'Database',       keywords: ['mysql', 'postgresql', 'psql', 'mongosh', 'redis-cli', 'sqlite3', 'redis'] },
+    // VS Code Extension — before Linux so "vsce ls" doesn't match Linux
+    { name: 'VS Code Extension', keywords: ['vsce', 'ovsx'] },
+    // Flutter / Dart
+    { name: 'Flutter',        keywords: ['flutter', 'dart format', 'dart test'] },
+    // Gradle / Maven — before Linux
+    { name: 'Gradle & Maven', keywords: ['gradlew', 'gradle', 'mvn'] },
+    // SSH / Remote — before Linux (Linux also lists ssh/scp/rsync)
+    { name: 'SSH & Remote',   keywords: ['ssh-keygen', 'ssh-copy-id', 'ssh ', 'scp ', 'rsync'] },
+    // Terraform / AWS
+    { name: 'Cloud',          keywords: ['terraform', 'aws ', 'gcloud', 'azure'] },
+    // Go — last specific before Linux (all 'go' prefixed commands)
+    { name: 'Go',             keywords: ['go build', 'go run', 'go test', 'go mod', 'go get', 'go vet', 'go fmt', 'gofmt'] },
+    { name: 'Linux',          keywords: ['ls ', 'ls -', 'cd ', 'mkdir', 'rm -', 'cp ', 'mv ', 'chmod', 'chown', 'grep', 'find ', 'cat ', 'tail ', 'head ', 'df ', 'ps ', 'free'] }
   ];
 
   constructor(context: ExtensionContext) {

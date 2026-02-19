@@ -1,5 +1,6 @@
 import { Disposable, ViewColumn, WebviewPanel, window } from 'vscode';
 import { ValidationLevel, ValidationResult } from '../commands/validator';
+import { getWebviewDevScript } from '../utils/logger';
 
 /**
  * Message types sent from the webview to the extension
@@ -109,6 +110,7 @@ export class CommandTestWebview {
       <!DOCTYPE html>
       <html lang="en">
       <head>
+        ${getWebviewDevScript()}
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Command Test Results</title>

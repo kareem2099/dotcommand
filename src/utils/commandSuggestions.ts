@@ -2,13 +2,15 @@ import { window, workspace, Disposable, Terminal, QuickPickItem, QuickPick } fro
 import { CommandStorage } from '../storage/storage';
 import { getCommandHistoryManager } from './commandHistory';
 import { getTemplateManager } from './commandTemplates';
+import { getPackageJsonParser, PackageSuggestion } from './packageJsonParser';
 
 export interface CommandSuggestion extends QuickPickItem {
   command: string;
-  source: 'history' | 'saved' | 'prepared' | 'template';
+  source: 'history' | 'saved' | 'prepared' | 'template' | 'package';
   usageCount: number;
   lastUsed?: number;
   category?: string;
+  packageSuggestion?: PackageSuggestion;
 }
 
 /**
@@ -201,6 +203,45 @@ export class CommandSuggestionsManager {
         }
       } catch (error) {
         console.warn('Error loading templates for suggestions:', error);
+      }
+    }
+
+    // Add package.json suggestions (npm packages from project)
+    if (prefix.startsWith('npm ') || prefix.startsWith('npx ') || prefix.startsWith('yarn ') || prefix.startsWith('pnpm ')) {
+      try {
+        const packageParser = getPackageJsonParser();
+        const packageSuggestions = await packageParser.getSuggestions(
+          prefix.replace(/^(npm|npx|yarn|pnpm)\s+/, ''),
+          maxSuggestions
+        );
+
+        for (const pkg of packageSuggestions) {
+          // Generate command based on package type
+          let command = prefix;
+          if (pkg.type === 'script') {
+            command = `npm run ${pkg.name}`;
+          } else if (pkg.type === 'dependency') {
+            command = `npm install ${pkg.name}@${pkg.version}`;
+          } else if (pkg.type === 'devDependency') {
+            command = `npm install -D ${pkg.name}@${pkg.version}`;
+          }
+
+          if (!seenCommands.has(command)) {
+            seenCommands.add(command);
+            suggestions.push({
+              label: pkg.name,
+              description: `Package • ${pkg.type}`,
+              detail: command,
+              command: command,
+              source: 'package',
+              usageCount: 0,
+              category: 'npm',
+              packageSuggestion: pkg
+            });
+          }
+        }
+      } catch (error) {
+        console.warn('Error loading package suggestions:', error);
       }
     }
 

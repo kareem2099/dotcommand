@@ -6,6 +6,109 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+ [1.5.0] - 2026-02-19
+
+📊 INTELLIGENCE FOUNDATION & COMMAND EXPANSION - Complete Analytics & ML-Powered Suggestions
+
+### 🎯 Core Intelligence Features
+- **Analytics Service** - Full tracking for suggestion clicks, acceptance rates, and response times in local storage
+- **ML-Based Suggestions** - Weighted scoring using usage frequency, recency, context match, and category preference
+- **Session Tracking** - Track session ID, duration, and session events for user activity analysis
+- **Command Success Rate** - Monitor command reliability with success/failure tracking per command
+- **Context Accuracy** - Measure and learn from how often detected context is correct via user corrections
+
+### 📦 Package Intelligence System
+- **Smart Package Suggestions** - Parse package.json and suggest existing dependencies when installing new packages
+- **Package Manager Detection** - Priority: pnpm > yarn > bun > npm
+- **Companion Package Suggestions**:
+  - react → react-dom, @types/react
+  - eslint → prettier
+  - jest → @types/jest
+  - typescript → @types/node
+  - axios → @types/axios
+
+### 🔧 Custom Context Rules
+- **JSON-Based Rules** - Users can define custom context triggers for personal templates via JSON config
+- **Pattern Matching** - File patterns, directory checks, dependency verification
+- **Extensible System** - Easy to add new rule types
+
+### 🧪 Comprehensive Test Suite
+- **Analytics Test Suite** - Full test coverage for event tracking, session, and success rates
+- **ML Suggestions Test Suite** - Testing scoring, ranking, and context matching
+- **PackageJson Parser Test Suite** - 37 tests covering:
+  - Package Manager Detection (7 tests)
+  - PackageJsonInfo Structure (2 tests)
+  - hasPackage() (3 tests)
+  - getPackageType() (3 tests)
+  - getAllDependencies() (3 tests)
+  - getScripts() (2 tests)
+  - Smart Suggestions (11 tests)
+  - Relevance Sort (4 tests)
+  - Singleton Pattern (1 test)
+  - Cache Invalidation (2 tests)
+
+### 🌍 Extended Context Detection
+- **New Technologies Detected**: flutter, dart, gradle, maven, cmake, cpp, make, terraform, csharp, pnpm, yarn, nextjs, nuxtjs, svelte, electron
+- **File Patterns**: pubspec.yaml, build.gradle, build.gradle.kts, pom.xml, CMakeLists.txt, Makefile, .tf files, pnpm-lock.yaml, setup.py, Pipfile
+
+### 📚 Expanded Command Categories (20 Categories, 180+ Commands)
+- **Rust Commands** (cargo) - build/run/test/clippy/fmt/add/doc
+- **Go Commands** - go build/run/test/mod/get/vet/fmt
+- **pnpm Commands** - install/add/dev/build/test/remove
+- **Terraform Commands** - init/plan/apply/destroy/validate/fmt
+- **AWS Commands** - S3/EC2/Lambda/CloudWatch/ECR
+- **Flutter Commands** - run/build APK+iOS+Web/pub get/test/clean/doctor
+- **Gradle & Maven Commands** - build/test/clean/run/Spring Boot
+- **SSH & Remote Commands** - ssh/scp/rsync/ssh-keygen with dynamic parameters
+- **VS Code Extension Commands** (vsce/ovsx) - package, publish, login, logout
+
+### 🖥️ Smart Terminal Routing
+- **New Terminal Categories**: Rust, Flutter, Gradle & Maven, SSH & Remote, Cloud (Terraform/AWS), Go
+- **Priority Routing**: Rust before Go, Database before Go, SSH before Linux
+- **Named Terminals**: DotCommand-Rust, DotCommand-Flutter, DotCommand-Cloud, etc.
+
+### 🎨 Full Icon & Emoji Coverage
+- Rust → 🦀 debug-start
+- Go → 🐹 arrow-right
+- pnpm → 📦 package
+- Terraform → 🏗️ cloud
+- AWS → ☁️ cloud
+- Flutter → 📱 device-mobile
+- Gradle/Maven → 🏗️ tools
+- SSH/Remote → 🔐 remote
+
+### 💾 Data-Driven Architecture
+- **JSON-Based Prepared Commands** - Refactored from 500+ lines of hardcoded TypeScript to clean JSON
+- **Easy Updates** - Adding commands requires only JSON edits
+- **prepared.ts** reduced from 500+ lines to ~90 lines
+
+### 🔗 Command Chaining Support
+- Full support through template system using shell `&&` operator
+- Template variables handle dynamic parts
+- No timing issues, correct failure propagation
+
+### 🧪 Test Commands Available
+- `dotcommand.runTests` - Analytics Test Suite
+- `dotcommand.runMLTests` - ML Suggestions Test Suite
+- `dotcommand.runPackageJsonTests` - PackageJson Parser Test Suite (37 tests)
+
+### 📈 Performance Monitoring
+- Cache hit rate tracking
+- Suggestion relevance scores
+- Execution time monitoring
+
+### 🔒 Production-Ready Logging
+- Console silencing in production (log/warn/info/debug silenced, error kept)
+- Webview console silencing via injected script
+- Clean production output for users
+
+### 🐛 Fixes & Improvements
+- Fixed duplicate key issues in webview messaging
+- Fixed unnecessary escape characters in JavaScript
+- Improved webview console silencing implementation
+
+---
+
  [1.4.0] - 2026-01-13
 
 🧠 SMART CONTEXT AWARENESS REVOLUTION - Extension now understands your project and suggests relevant commands automatically

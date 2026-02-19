@@ -1,0 +1,514 @@
+{
+  "categories": [
+    {
+      "name": "Git Commands",
+      "commands": [
+        { "name": "Check Status",       "command": "git status",                        "description": "View changes in your working directory" },
+        { "name": "Stage Changes",       "command": "git add .",                          "description": "Stage all changed files" },
+        { "name": "Commit Changes",      "command": "git commit -m \"updates\"",          "description": "Commit staged changes with message" },
+        { "name": "Push to Main",        "command": "git push origin main",              "description": "Push commits to main branch" },
+        { "name": "Pull from Main",      "command": "git pull origin main",              "description": "Pull changes from main branch" },
+        { "name": "View History",        "command": "git log --oneline",                 "description": "View recent commit history" },
+        { "name": "Create Branch",       "command": "git checkout -b feature",           "description": "Create and switch to new branch" },
+        { "name": "Switch Branch",       "command": "git checkout main",                 "description": "Switch to existing branch" },
+        { "name": "Git Stash",           "command": "git stash",                         "description": "Stash current changes" },
+        { "name": "Git Stash Pop",       "command": "git stash pop",                     "description": "Apply and remove latest stash" },
+        { "name": "Create & Switch Branch", "command": "git checkout -b {branch}",       "description": "Create a new branch and switch to it",
+          "parameters": [{ "name": "branch", "description": "Branch name (e.g., feature/new-feature)", "default": "feature/new-feature" }] },
+        { "name": "Checkout Branch",     "command": "git checkout {branch}",             "description": "Switch to an existing branch",
+          "parameters": [{ "name": "branch", "description": "Branch name (e.g., main, develop)", "default": "main" }] },
+        { "name": "Commit with Message", "command": "git commit -m \"{message}\"",       "description": "Commit staged changes with a custom message",
+          "parameters": [{ "name": "message", "description": "Commit message", "default": "updates" }] },
+        { "name": "Push to Branch",      "command": "git push origin {branch}",          "description": "Push commits to a specific remote branch",
+          "parameters": [{ "name": "branch", "description": "Remote branch name", "default": "main" }] },
+        { "name": "Pull from Branch",    "command": "git pull origin {branch}",          "description": "Pull changes from a specific remote branch",
+          "parameters": [{ "name": "branch", "description": "Remote branch name", "default": "main" }] },
+        { "name": "Create Tag",          "command": "git tag -a {tag} -m \"{message}\"", "description": "Create an annotated git tag",
+          "parameters": [
+            { "name": "tag",     "description": "Tag name (e.g., v1.0.0)",  "default": "v1.0.0" },
+            { "name": "message", "description": "Tag message",              "default": "Release" }
+          ] },
+        { "name": "Git Merge Branch",    "command": "git merge {branch}",               "description": "Merge specified branch into current branch",
+          "parameters": [{ "name": "branch", "description": "Branch to merge", "default": "feature-branch" }] },
+        { "name": "Git Rebase",          "command": "git rebase {branch}",              "description": "Rebase current branch onto specified branch",
+          "parameters": [{ "name": "branch", "description": "Branch to rebase onto", "default": "main" }] },
+        { "name": "Git Cherry Pick",     "command": "git cherry-pick {commit}",         "description": "Cherry-pick a specific commit",
+          "parameters": [{ "name": "commit", "description": "Commit hash", "default": "abc123" }] },
+        { "name": "Git Reset Hard",      "command": "git reset --hard {commit}",        "description": "Reset to specific commit (WARNING: destructive)",
+          "parameters": [{ "name": "commit", "description": "Commit hash or HEAD~N", "default": "HEAD~1" }] }
+      ]
+    },
+    {
+      "name": "NPM Commands",
+      "commands": [
+        { "name": "Install Packages",      "command": "npm install",                          "description": "Install all project dependencies" },
+        { "name": "Start Dev Server",      "command": "npm run dev",                          "description": "Run development server" },
+        { "name": "Build Project",         "command": "npm run build",                        "description": "Create production build" },
+        { "name": "Run Tests",             "command": "npm run test",                         "description": "Execute test suite" },
+        { "name": "Run Linter",            "command": "npm run lint",                         "description": "Check code quality" },
+        { "name": "Update Packages",       "command": "npm update",                           "description": "Update all dependencies" },
+        { "name": "Audit Packages",        "command": "npm audit",                            "description": "Check for security vulnerabilities" },
+        { "name": "Install Package",       "command": "npm install {package}",                "description": "Install a specific NPM package",
+          "parameters": [{ "name": "package", "description": "Package name (e.g., lodash, react)", "default": "package-name" }] },
+        { "name": "Add Dev Dependency",    "command": "npm install --save-dev {package}",     "description": "Add a development dependency",
+          "parameters": [{ "name": "package", "description": "Package name to add as dev dependency", "default": "dev-package-name" }] },
+        { "name": "Remove Package",        "command": "npm uninstall {package}",              "description": "Remove an installed package",
+          "parameters": [{ "name": "package", "description": "Package name to remove", "default": "package-name" }] },
+        { "name": "Run Custom Script",     "command": "npm run {script}",                     "description": "Run a custom script defined in package.json",
+          "parameters": [{ "name": "script", "description": "Script name (e.g., dev, build, test)", "default": "dev" }] },
+        { "name": "NPM Publish",           "command": "npm publish",                          "description": "Publish package to npm registry" },
+        { "name": "NPM Version Bump",      "command": "npm version {bump}",                   "description": "Bump the package version",
+          "parameters": [{ "name": "bump", "description": "Version bump type: patch, minor, major", "default": "patch" }] }
+      ]
+    },
+    {
+      "name": "Yarn Commands",
+      "commands": [
+        { "name": "Yarn Install",       "command": "yarn install",           "description": "Install all project dependencies" },
+        { "name": "Yarn Dev",           "command": "yarn dev",               "description": "Start development server" },
+        { "name": "Yarn Build",         "command": "yarn build",             "description": "Build project for production" },
+        { "name": "Yarn Test",          "command": "yarn test",              "description": "Run tests" },
+        { "name": "Yarn Add Package",   "command": "yarn add {package}",     "description": "Add a package",
+          "parameters": [{ "name": "package", "description": "Package name (e.g., lodash, react)", "default": "package-name" }] },
+        { "name": "Yarn Add Dev",       "command": "yarn add -D {package}",  "description": "Add a dev dependency",
+          "parameters": [{ "name": "package", "description": "Package name", "default": "dev-package-name" }] },
+        { "name": "Yarn Remove",        "command": "yarn remove {package}",  "description": "Remove a package",
+          "parameters": [{ "name": "package", "description": "Package name to remove", "default": "package-name" }] },
+        { "name": "Yarn Run Script",    "command": "yarn {script}",          "description": "Run a yarn script",
+          "parameters": [{ "name": "script", "description": "Script name", "default": "dev" }] }
+      ]
+    },
+    {
+      "name": "pnpm Commands",
+      "commands": [
+        { "name": "pnpm Install",      "command": "pnpm install",            "description": "Install all project dependencies" },
+        { "name": "pnpm Dev",          "command": "pnpm dev",                "description": "Start development server" },
+        { "name": "pnpm Build",        "command": "pnpm build",              "description": "Build project for production" },
+        { "name": "pnpm Test",         "command": "pnpm test",               "description": "Run tests" },
+        { "name": "pnpm Add Package",  "command": "pnpm add {package}",      "description": "Add a package",
+          "parameters": [{ "name": "package", "description": "Package name (e.g., lodash, react)", "default": "package-name" }] },
+        { "name": "pnpm Add Dev",      "command": "pnpm add -D {package}",   "description": "Add a dev dependency",
+          "parameters": [{ "name": "package", "description": "Package name", "default": "dev-package-name" }] },
+        { "name": "pnpm Remove",       "command": "pnpm remove {package}",   "description": "Remove a package",
+          "parameters": [{ "name": "package", "description": "Package name to remove", "default": "package-name" }] },
+        { "name": "pnpm Run Script",   "command": "pnpm run {script}",       "description": "Run a script from package.json",
+          "parameters": [{ "name": "script", "description": "Script name", "default": "dev" }] },
+        { "name": "pnpm Update",       "command": "pnpm update",             "description": "Update all dependencies" },
+        { "name": "pnpm Audit",        "command": "pnpm audit",              "description": "Check for security vulnerabilities" }
+      ]
+    },
+    {
+      "name": "Docker Commands",
+      "commands": [
+        { "name": "Build Image",              "command": "docker build -t myapp .",            "description": "Build Docker image from Dockerfile" },
+        { "name": "Run Container",            "command": "docker run -p 3000:3000 myapp",      "description": "Run Docker container" },
+        { "name": "List Images",              "command": "docker images",                      "description": "List all Docker images" },
+        { "name": "List Containers",          "command": "docker ps -a",                       "description": "List all containers" },
+        { "name": "Docker Compose Up",        "command": "docker-compose up -d",              "description": "Start services with compose" },
+        { "name": "Docker Compose Down",      "command": "docker-compose down",               "description": "Stop services with compose" },
+        { "name": "Build Custom Image",       "command": "docker build -t {name} .",           "description": "Build a Docker image with custom name",
+          "parameters": [{ "name": "name", "description": "Image name/tag", "default": "myapp", "validate": "docker-name", "validationMessage": "Image name can only contain letters, numbers, dots, hyphens, and underscores" }] },
+        { "name": "Run Custom Container",     "command": "docker run -p {port}:{port} {image}", "description": "Run a Docker container on a custom port",
+          "parameters": [
+            { "name": "port",  "description": "Port number", "default": "3000", "validate": "port", "validationMessage": "Port must be a number between 1-65535" },
+            { "name": "image", "description": "Docker image name", "default": "myapp" }
+          ] },
+        { "name": "Execute Shell",            "command": "docker exec -it {container} sh",     "description": "Execute shell in a running container",
+          "parameters": [{ "name": "container", "description": "Container name or ID", "default": "container-name" }] },
+        { "name": "View Logs",                "command": "docker logs {container}",            "description": "View logs from a container",
+          "parameters": [{ "name": "container", "description": "Container name or ID", "default": "container-name" }] },
+        { "name": "Stop Container",           "command": "docker stop {container}",            "description": "Stop a running container",
+          "parameters": [{ "name": "container", "description": "Container name or ID", "default": "container-name" }] },
+        { "name": "Remove Container",         "command": "docker rm {container}",              "description": "Remove a container",
+          "parameters": [{ "name": "container", "description": "Container name or ID", "default": "container-name" }] },
+        { "name": "Pull Image",               "command": "docker pull {image}",                "description": "Pull an image from Docker Hub",
+          "parameters": [{ "name": "image", "description": "Image name (e.g., nginx:latest)", "default": "nginx:latest" }] },
+        { "name": "Docker System Prune",      "command": "docker system prune -f",             "description": "Clean up unused Docker resources" }
+      ]
+    },
+    {
+      "name": "Kubernetes Commands",
+      "commands": [
+        { "name": "Get Pods",              "command": "kubectl get pods",                                           "description": "List all pods" },
+        { "name": "Get Services",          "command": "kubectl get services",                                       "description": "List all services" },
+        { "name": "Get Deployments",       "command": "kubectl get deployments",                                    "description": "List all deployments" },
+        { "name": "Apply Manifest",        "command": "kubectl apply -f {manifest}",                               "description": "Apply a Kubernetes manifest file",
+          "parameters": [{ "name": "manifest", "description": "Path to manifest file (e.g., deployment.yml)", "default": "deployment.yml" }] },
+        { "name": "Get Pod Logs",          "command": "kubectl logs {pod}",                                        "description": "View logs from a specific pod",
+          "parameters": [{ "name": "pod", "description": "Pod name", "default": "pod-name" }] },
+        { "name": "Delete Pod",            "command": "kubectl delete pod {pod}",                                   "description": "Delete a specific pod",
+          "parameters": [{ "name": "pod", "description": "Pod name to delete", "default": "pod-name" }] },
+        { "name": "Scale Deployment",      "command": "kubectl scale deployment {deployment} --replicas={replicas}", "description": "Scale a deployment",
+          "parameters": [
+            { "name": "deployment", "description": "Deployment name",     "default": "app-name" },
+            { "name": "replicas",   "description": "Number of replicas",  "default": "3", "validate": "positive-int", "validationMessage": "Replicas must be a positive number" }
+          ] },
+        { "name": "Describe Pod",          "command": "kubectl describe pod {pod}",                                "description": "Describe a specific pod",
+          "parameters": [{ "name": "pod", "description": "Pod name", "default": "pod-name" }] },
+        { "name": "Port Forward",          "command": "kubectl port-forward {pod} {localPort}:{podPort}",          "description": "Forward local port to pod port",
+          "parameters": [
+            { "name": "pod",       "description": "Pod name",          "default": "pod-name" },
+            { "name": "localPort", "description": "Local port number", "default": "8080", "validate": "port", "validationMessage": "Port must be 1-65535" },
+            { "name": "podPort",   "description": "Pod port number",   "default": "80",   "validate": "port", "validationMessage": "Port must be 1-65535" }
+          ] }
+      ]
+    },
+    {
+      "name": "Linux Commands",
+      "commands": [
+        { "name": "List Files",          "command": "ls -la",                  "description": "List files with detailed information" },
+        { "name": "Current Directory",   "command": "pwd",                     "description": "Print working directory path" },
+        { "name": "Disk Usage",          "command": "df -h",                   "description": "Show disk usage in human-readable format" },
+        { "name": "Memory Usage",        "command": "free -h",                 "description": "Show memory usage" },
+        { "name": "Running Processes",   "command": "ps aux",                  "description": "List all running processes" },
+        { "name": "Network Connections", "command": "ss -tulnp",               "description": "Show active network connections" },
+        { "name": "Copy File",           "command": "cp {source} {destination}", "description": "Copy a file to a new location",
+          "parameters": [
+            { "name": "source",      "description": "Source file path",      "default": "source.txt",      "validate": "file-ext", "validationMessage": "Must include a file extension" },
+            { "name": "destination", "description": "Destination file path", "default": "destination.txt", "validate": "file-ext", "validationMessage": "Must include a file extension" }
+          ] },
+        { "name": "Move/Rename File",    "command": "mv {source} {destination}", "description": "Move or rename a file",
+          "parameters": [
+            { "name": "source",      "description": "Source file path",      "default": "old-name.txt",    "validate": "file-ext", "validationMessage": "Must include a file extension" },
+            { "name": "destination", "description": "Destination file path", "default": "new-name.txt",    "validate": "file-ext", "validationMessage": "Must include a file extension" }
+          ] },
+        { "name": "View File",           "command": "cat {file}",              "description": "Display file contents",
+          "parameters": [{ "name": "file", "description": "File path (e.g., file.txt, app.js)", "default": "file.txt", "validate": "file-ext", "validationMessage": "Must include a file extension" }] },
+        { "name": "Find Files",          "command": "find {directory} -name \"{pattern}\"", "description": "Find files matching a pattern",
+          "parameters": [
+            { "name": "directory", "description": "Directory to search in", "default": "." },
+            { "name": "pattern",   "description": "File pattern (e.g., *.txt, *.js)", "default": "*.txt", "validate": "wildcard", "validationMessage": "Pattern should include wildcards (* or ?)" }
+          ] },
+        { "name": "Search Text",         "command": "grep \"{search}\" {file}", "description": "Search for text within a file",
+          "parameters": [
+            { "name": "search", "description": "Text to search for", "default": "search-term" },
+            { "name": "file",   "description": "File path",          "default": "file.txt", "validate": "file-ext", "validationMessage": "Must include a file extension" }
+          ] },
+        { "name": "Change Directory",    "command": "cd {directory}",          "description": "Change current working directory",
+          "parameters": [{ "name": "directory", "description": "Directory path to navigate to", "default": "~/Desktop" }] },
+        { "name": "Create Directory",    "command": "mkdir {directory}",       "description": "Create a new directory",
+          "parameters": [{ "name": "directory", "description": "Directory name/path to create", "default": "new-directory" }] },
+        { "name": "Remove Directory",    "command": "rm -rf {directory}",      "description": "Remove directory and all its contents (WARNING: irreversible)",
+          "parameters": [{ "name": "directory", "description": "Directory path to remove", "default": "old-directory" }] },
+        { "name": "Make File Executable","command": "chmod +x {file}",         "description": "Make a file executable",
+          "parameters": [{ "name": "file", "description": "File path", "default": "script.sh" }] },
+        { "name": "Archive Files",       "command": "tar -czf {archive} {source}", "description": "Create a compressed tar archive",
+          "parameters": [
+            { "name": "archive", "description": "Archive filename (e.g., backup.tar.gz)", "default": "backup.tar.gz" },
+            { "name": "source",  "description": "Files/directory to archive",             "default": "." }
+          ] }
+      ]
+    },
+    {
+      "name": "Python Commands",
+      "commands": [
+        { "name": "Install Requirements",       "command": "pip install -r requirements.txt",   "description": "Install packages from requirements.txt" },
+        { "name": "Create Virtual Env",         "command": "python -m venv {name}",             "description": "Create a Python virtual environment",
+          "parameters": [{ "name": "name", "description": "Virtual environment name", "default": "venv" }] },
+        { "name": "Activate Virtual Env",       "command": "source {name}/bin/activate",        "description": "Activate a Python virtual environment",
+          "parameters": [{ "name": "name", "description": "Virtual environment name", "default": "venv" }] },
+        { "name": "Install Package",            "command": "pip install {package}",             "description": "Install a Python package",
+          "parameters": [{ "name": "package", "description": "Package name (e.g., requests, numpy)", "default": "requests" }] },
+        { "name": "Run Script",                 "command": "python {script}",                   "description": "Execute a Python script",
+          "parameters": [{ "name": "script", "description": "Python script file (e.g., main.py)", "default": "main.py", "validate": "python-file", "validationMessage": "File must be a Python script (.py)" }] },
+        { "name": "Run Django Server",          "command": "python manage.py runserver",        "description": "Start Django development server" },
+        { "name": "Django Migrations",          "command": "python manage.py makemigrations",   "description": "Create Django database migrations" },
+        { "name": "Apply Django Migrations",    "command": "python manage.py migrate",          "description": "Apply Django database migrations" },
+        { "name": "Run pytest",                 "command": "pytest",                            "description": "Run all tests with pytest" },
+        { "name": "Run pytest Verbose",         "command": "pytest -v",                         "description": "Run tests with verbose output" },
+        { "name": "Format with Black",          "command": "black .",                           "description": "Format Python code with Black" },
+        { "name": "Lint with Flake8",           "command": "flake8 .",                          "description": "Lint Python code with Flake8" },
+        { "name": "Freeze Requirements",        "command": "pip freeze > requirements.txt",     "description": "Save current dependencies to requirements.txt" }
+      ]
+    },
+    {
+      "name": "Rust Commands",
+      "commands": [
+        { "name": "Cargo Build",         "command": "cargo build",                   "description": "Build the Rust project" },
+        { "name": "Cargo Run",           "command": "cargo run",                     "description": "Build and run the Rust project" },
+        { "name": "Cargo Test",          "command": "cargo test",                    "description": "Run all tests" },
+        { "name": "Cargo Check",         "command": "cargo check",                   "description": "Check code without building" },
+        { "name": "Cargo Clippy",        "command": "cargo clippy",                  "description": "Run the Clippy linter" },
+        { "name": "Cargo Format",        "command": "cargo fmt",                     "description": "Format Rust code" },
+        { "name": "Cargo Clean",         "command": "cargo clean",                   "description": "Remove build artifacts" },
+        { "name": "Cargo Release Build", "command": "cargo build --release",         "description": "Build optimized release binary" },
+        { "name": "Cargo Add Crate",     "command": "cargo add {crate}",             "description": "Add a dependency crate",
+          "parameters": [{ "name": "crate", "description": "Crate name (e.g., serde, tokio)", "default": "serde" }] },
+        { "name": "Cargo Remove Crate",  "command": "cargo remove {crate}",          "description": "Remove a dependency crate",
+          "parameters": [{ "name": "crate", "description": "Crate name to remove", "default": "serde" }] },
+        { "name": "Cargo Update",        "command": "cargo update",                  "description": "Update all dependencies" },
+        { "name": "Cargo Doc",           "command": "cargo doc --open",              "description": "Build and open documentation" },
+        { "name": "Cargo Bench",         "command": "cargo bench",                   "description": "Run benchmarks" },
+        { "name": "Cargo Run Binary",    "command": "cargo run --bin {binary}",      "description": "Run a specific binary target",
+          "parameters": [{ "name": "binary", "description": "Binary name from Cargo.toml", "default": "main" }] }
+      ]
+    },
+    {
+      "name": "Go Commands",
+      "commands": [
+        { "name": "Go Build",            "command": "go build ./...",            "description": "Build all packages" },
+        { "name": "Go Run",              "command": "go run {file}",             "description": "Build and run a Go file",
+          "parameters": [{ "name": "file", "description": "Go file to run (e.g., main.go)", "default": "main.go" }] },
+        { "name": "Go Test",             "command": "go test ./...",             "description": "Run all tests" },
+        { "name": "Go Test Verbose",     "command": "go test -v ./...",          "description": "Run tests with verbose output" },
+        { "name": "Go Mod Tidy",         "command": "go mod tidy",               "description": "Clean up unused dependencies" },
+        { "name": "Go Mod Init",         "command": "go mod init {module}",      "description": "Initialize a new Go module",
+          "parameters": [{ "name": "module", "description": "Module path (e.g., github.com/user/app)", "default": "github.com/user/app" }] },
+        { "name": "Go Get Package",      "command": "go get {package}",          "description": "Add/update a Go package dependency",
+          "parameters": [{ "name": "package", "description": "Package path (e.g., github.com/pkg/errors)", "default": "github.com/pkg/errors" }] },
+        { "name": "Go Vet",              "command": "go vet ./...",              "description": "Examine Go source code for errors" },
+        { "name": "Go Format",           "command": "gofmt -w .",                "description": "Format all Go source files" },
+        { "name": "Go Install",          "command": "go install",                "description": "Compile and install packages" },
+        { "name": "Go Generate",         "command": "go generate ./...",         "description": "Run code generation" },
+        { "name": "Go Coverage",         "command": "go test -cover ./...",      "description": "Run tests with coverage" }
+      ]
+    },
+    {
+      "name": "Database Commands",
+      "commands": [
+        { "name": "MySQL Connect",       "command": "mysql -u {user} -p -h {host} {database}",  "description": "Connect to MySQL database",
+          "parameters": [
+            { "name": "user",     "description": "MySQL username",  "default": "root" },
+            { "name": "host",     "description": "MySQL host",      "default": "localhost" },
+            { "name": "database", "description": "Database name",   "default": "mydb" }
+          ] },
+        { "name": "PostgreSQL Connect",  "command": "psql -h {host} -U {user} -d {database}",   "description": "Connect to PostgreSQL database",
+          "parameters": [
+            { "name": "host",     "description": "PostgreSQL host",     "default": "localhost" },
+            { "name": "user",     "description": "PostgreSQL username", "default": "postgres" },
+            { "name": "database", "description": "Database name",       "default": "mydb" }
+          ] },
+        { "name": "MongoDB Connect",     "command": "mongosh \"mongodb://{host}:{port}/{database}\"", "description": "Connect to MongoDB",
+          "parameters": [
+            { "name": "host",     "description": "MongoDB host",     "default": "localhost" },
+            { "name": "port",     "description": "MongoDB port",     "default": "27017", "validate": "port", "validationMessage": "Port must be 1-65535" },
+            { "name": "database", "description": "Database name",    "default": "mydb" }
+          ] },
+        { "name": "Redis CLI",           "command": "redis-cli -h {host} -p {port}",             "description": "Connect to Redis server",
+          "parameters": [
+            { "name": "host", "description": "Redis host", "default": "localhost" },
+            { "name": "port", "description": "Redis port", "default": "6379", "validate": "port", "validationMessage": "Port must be 1-65535" }
+          ] },
+        { "name": "SQLite Open",         "command": "sqlite3 {database}",                        "description": "Open a SQLite database file",
+          "parameters": [{ "name": "database", "description": "SQLite database file (e.g., app.db)", "default": "app.db" }] }
+      ]
+    },
+    {
+      "name": "Terraform Commands",
+      "commands": [
+        { "name": "Terraform Init",       "command": "terraform init",            "description": "Initialize a Terraform working directory" },
+        { "name": "Terraform Plan",       "command": "terraform plan",            "description": "Show execution plan" },
+        { "name": "Terraform Apply",      "command": "terraform apply",           "description": "Apply Terraform changes (with confirmation)" },
+        { "name": "Terraform Apply Auto", "command": "terraform apply -auto-approve", "description": "Apply Terraform changes without confirmation" },
+        { "name": "Terraform Destroy",    "command": "terraform destroy",         "description": "Destroy all Terraform-managed infrastructure" },
+        { "name": "Terraform Format",     "command": "terraform fmt",             "description": "Format Terraform configuration files" },
+        { "name": "Terraform Validate",   "command": "terraform validate",        "description": "Validate Terraform configuration" },
+        { "name": "Terraform Output",     "command": "terraform output",          "description": "Show Terraform output values" },
+        { "name": "Terraform State List", "command": "terraform state list",      "description": "List all resources in Terraform state" },
+        { "name": "Terraform Workspace",  "command": "terraform workspace list",  "description": "List all Terraform workspaces" },
+        { "name": "Terraform Import",     "command": "terraform import {resource} {id}", "description": "Import existing infrastructure into Terraform state",
+          "parameters": [
+            { "name": "resource", "description": "Resource address (e.g., aws_instance.my_server)", "default": "aws_instance.my_server" },
+            { "name": "id",       "description": "Resource ID to import",                           "default": "i-1234567890" }
+          ] }
+      ]
+    },
+    {
+      "name": "AWS Commands",
+      "commands": [
+        { "name": "AWS Configure",       "command": "aws configure",                              "description": "Set up AWS credentials and config" },
+        { "name": "S3 List Buckets",     "command": "aws s3 ls",                                  "description": "List all S3 buckets" },
+        { "name": "S3 List Contents",    "command": "aws s3 ls s3://{bucket}",                    "description": "List contents of an S3 bucket",
+          "parameters": [{ "name": "bucket", "description": "S3 bucket name", "default": "my-bucket" }] },
+        { "name": "S3 Upload File",      "command": "aws s3 cp {file} s3://{bucket}/{key}",       "description": "Upload a file to S3",
+          "parameters": [
+            { "name": "file",   "description": "Local file path",      "default": "file.txt", "validate": "file-ext", "validationMessage": "Must include a file extension" },
+            { "name": "bucket", "description": "S3 bucket name",       "default": "my-bucket" },
+            { "name": "key",    "description": "S3 key (destination path)", "default": "uploads/file.txt" }
+          ] },
+        { "name": "S3 Download File",    "command": "aws s3 cp s3://{bucket}/{key} {dest}",       "description": "Download a file from S3",
+          "parameters": [
+            { "name": "bucket", "description": "S3 bucket name",             "default": "my-bucket" },
+            { "name": "key",    "description": "S3 key (file path in bucket)", "default": "uploads/file.txt" },
+            { "name": "dest",   "description": "Local destination path",     "default": "." }
+          ] },
+        { "name": "S3 Sync",             "command": "aws s3 sync {source} s3://{bucket}",         "description": "Sync a local directory to S3",
+          "parameters": [
+            { "name": "source", "description": "Local directory to sync", "default": "." },
+            { "name": "bucket", "description": "S3 bucket name",          "default": "my-bucket" }
+          ] },
+        { "name": "EC2 List Instances",  "command": "aws ec2 describe-instances --output table",  "description": "List all EC2 instances" },
+        { "name": "Lambda List",         "command": "aws lambda list-functions",                   "description": "List all Lambda functions" },
+        { "name": "Lambda Invoke",       "command": "aws lambda invoke --function-name {fn} response.json", "description": "Invoke a Lambda function",
+          "parameters": [{ "name": "fn", "description": "Lambda function name", "default": "my-function" }] },
+        { "name": "CloudWatch Logs",     "command": "aws logs tail {logGroup} --follow",           "description": "Stream CloudWatch log group",
+          "parameters": [{ "name": "logGroup", "description": "Log group name (e.g., /aws/lambda/my-fn)", "default": "/aws/lambda/my-function" }] },
+        { "name": "ECR Login",           "command": "aws ecr get-login-password | docker login --username AWS --password-stdin {registry}", "description": "Log in to Amazon ECR",
+          "parameters": [{ "name": "registry", "description": "ECR registry URI (e.g., 123456789.dkr.ecr.us-east-1.amazonaws.com)", "default": "123456789.dkr.ecr.us-east-1.amazonaws.com" }] }
+      ]
+    },
+    {
+      "name": "Flutter Commands",
+      "commands": [
+        { "name": "Flutter Run",           "command": "flutter run",              "description": "Run the Flutter app on a connected device" },
+        { "name": "Flutter Run Debug",     "command": "flutter run --debug",      "description": "Run in debug mode" },
+        { "name": "Flutter Run Release",   "command": "flutter run --release",    "description": "Run in release mode" },
+        { "name": "Flutter Build APK",     "command": "flutter build apk",        "description": "Build Android APK" },
+        { "name": "Flutter Build iOS",     "command": "flutter build ios",        "description": "Build iOS app" },
+        { "name": "Flutter Build Web",     "command": "flutter build web",        "description": "Build Flutter web app" },
+        { "name": "Flutter Pub Get",       "command": "flutter pub get",          "description": "Get Flutter package dependencies" },
+        { "name": "Flutter Pub Upgrade",   "command": "flutter pub upgrade",      "description": "Upgrade Flutter package dependencies" },
+        { "name": "Flutter Pub Add",       "command": "flutter pub add {package}", "description": "Add a Flutter package",
+          "parameters": [{ "name": "package", "description": "Package name from pub.dev (e.g., provider, riverpod)", "default": "provider" }] },
+        { "name": "Flutter Test",          "command": "flutter test",             "description": "Run all Flutter tests" },
+        { "name": "Flutter Clean",         "command": "flutter clean",            "description": "Clean Flutter build cache" },
+        { "name": "Flutter Analyze",       "command": "flutter analyze",          "description": "Analyze Flutter code for errors" },
+        { "name": "Flutter Format",        "command": "dart format .",            "description": "Format all Dart files" },
+        { "name": "Flutter Doctor",        "command": "flutter doctor",           "description": "Check Flutter installation health" },
+        { "name": "Flutter Devices",       "command": "flutter devices",          "description": "List connected devices" }
+      ]
+    },
+    {
+      "name": "Gradle & Maven Commands",
+      "commands": [
+        { "name": "Gradle Build",              "command": "./gradlew build",               "description": "Build the Gradle project" },
+        { "name": "Gradle Test",               "command": "./gradlew test",                "description": "Run Gradle tests" },
+        { "name": "Gradle Clean",              "command": "./gradlew clean",               "description": "Clean Gradle build artifacts" },
+        { "name": "Gradle Run",                "command": "./gradlew run",                 "description": "Run the Gradle application" },
+        { "name": "Gradle Clean Build",        "command": "./gradlew clean build",         "description": "Clean then build the project" },
+        { "name": "Gradle Dependencies",       "command": "./gradlew dependencies",        "description": "Show all project dependencies" },
+        { "name": "Gradle Wrapper",            "command": "gradle wrapper",                "description": "Generate the Gradle wrapper" },
+        { "name": "Maven Package",             "command": "mvn package",                   "description": "Build and package the Maven project" },
+        { "name": "Maven Install",             "command": "mvn install",                   "description": "Install artifact to local Maven repository" },
+        { "name": "Maven Test",                "command": "mvn test",                      "description": "Run Maven tests" },
+        { "name": "Maven Clean Install",       "command": "mvn clean install",             "description": "Clean then install the Maven project" },
+        { "name": "Maven Clean Package",       "command": "mvn clean package -DskipTests", "description": "Package without running tests" },
+        { "name": "Maven Dependency Tree",     "command": "mvn dependency:tree",           "description": "Show Maven dependency tree" },
+        { "name": "Maven Spring Boot Run",     "command": "mvn spring-boot:run",           "description": "Run Spring Boot application" }
+      ]
+    },
+    {
+      "name": "SSH & Remote Commands",
+      "commands": [
+        { "name": "SSH Connect",         "command": "ssh {user}@{host}",                            "description": "Connect to a remote server via SSH",
+          "parameters": [
+            { "name": "user", "description": "Remote username",       "default": "ubuntu" },
+            { "name": "host", "description": "Remote host or IP",     "default": "192.168.1.1" }
+          ] },
+        { "name": "SSH with Key",        "command": "ssh -i {key} {user}@{host}",                   "description": "Connect to remote server with specific SSH key",
+          "parameters": [
+            { "name": "key",  "description": "Path to private key (e.g., ~/.ssh/id_rsa)", "default": "~/.ssh/id_rsa" },
+            { "name": "user", "description": "Remote username",                           "default": "ubuntu" },
+            { "name": "host", "description": "Remote host or IP",                         "default": "192.168.1.1" }
+          ] },
+        { "name": "SSH with Port",       "command": "ssh -p {port} {user}@{host}",                  "description": "Connect to remote server on a custom port",
+          "parameters": [
+            { "name": "port", "description": "SSH port",          "default": "22", "validate": "port", "validationMessage": "Port must be 1-65535" },
+            { "name": "user", "description": "Remote username",   "default": "ubuntu" },
+            { "name": "host", "description": "Remote host or IP", "default": "192.168.1.1" }
+          ] },
+        { "name": "SCP Upload",          "command": "scp {file} {user}@{host}:{path}",              "description": "Copy a file to a remote server",
+          "parameters": [
+            { "name": "file", "description": "Local file path",      "default": "file.txt", "validate": "file-ext", "validationMessage": "Must include a file extension" },
+            { "name": "user", "description": "Remote username",      "default": "ubuntu" },
+            { "name": "host", "description": "Remote host or IP",    "default": "192.168.1.1" },
+            { "name": "path", "description": "Remote destination path", "default": "/home/ubuntu/" }
+          ] },
+        { "name": "SCP Download",        "command": "scp {user}@{host}:{path} {dest}",              "description": "Copy a file from a remote server",
+          "parameters": [
+            { "name": "user", "description": "Remote username",       "default": "ubuntu" },
+            { "name": "host", "description": "Remote host or IP",     "default": "192.168.1.1" },
+            { "name": "path", "description": "Remote file path",      "default": "/home/ubuntu/file.txt" },
+            { "name": "dest", "description": "Local destination path","default": "." }
+          ] },
+        { "name": "Rsync to Remote",     "command": "rsync -avz {source} {user}@{host}:{path}",     "description": "Sync local directory to remote server",
+          "parameters": [
+            { "name": "source", "description": "Local source directory", "default": "./dist" },
+            { "name": "user",   "description": "Remote username",        "default": "ubuntu" },
+            { "name": "host",   "description": "Remote host or IP",      "default": "192.168.1.1" },
+            { "name": "path",   "description": "Remote destination path","default": "/var/www/html" }
+          ] },
+        { "name": "Rsync from Remote",   "command": "rsync -avz {user}@{host}:{path} {dest}",       "description": "Sync files from remote server to local",
+          "parameters": [
+            { "name": "user", "description": "Remote username",       "default": "ubuntu" },
+            { "name": "host", "description": "Remote host or IP",     "default": "192.168.1.1" },
+            { "name": "path", "description": "Remote source path",    "default": "/var/www/html" },
+            { "name": "dest", "description": "Local destination",     "default": "./backup" }
+          ] },
+        { "name": "Generate SSH Key",    "command": "ssh-keygen -t ed25519 -C \"{comment}\"",       "description": "Generate a new ED25519 SSH key pair",
+          "parameters": [{ "name": "comment", "description": "Key comment (e.g., your email)", "default": "user@example.com" }] },
+        { "name": "Copy SSH Key",        "command": "ssh-copy-id {user}@{host}",                    "description": "Copy SSH public key to remote server",
+          "parameters": [
+            { "name": "user", "description": "Remote username",   "default": "ubuntu" },
+            { "name": "host", "description": "Remote host or IP", "default": "192.168.1.1" }
+          ] }
+      ]
+    },
+    {
+      "name": "Code Quality Commands",
+      "commands": [
+        { "name": "ESLint Fix",        "command": "npx eslint {files} --fix",   "description": "Fix ESLint issues automatically",
+          "parameters": [{ "name": "files", "description": "Files/directory to lint (e.g., src/)", "default": "src/" }] },
+        { "name": "Prettier Format",   "command": "npx prettier --write {files}", "description": "Format code with Prettier",
+          "parameters": [{ "name": "files", "description": "Files/directory to format", "default": "src/" }] },
+        { "name": "TypeScript Check",  "command": "npx tsc --noEmit",           "description": "Run TypeScript type checking without emitting" },
+        { "name": "Stylelint Fix",     "command": "npx stylelint {files} --fix", "description": "Fix CSS/SCSS linting issues",
+          "parameters": [{ "name": "files", "description": "CSS/SCSS files to lint", "default": "**/*.css" }] }
+      ]
+    },
+    {
+      "name": "Testing Commands",
+      "commands": [
+        { "name": "Jest Watch",       "command": "npx jest --watch",                   "description": "Run Jest tests in watch mode" },
+        { "name": "Jest Coverage",    "command": "npx jest --coverage",                "description": "Run Jest tests with coverage report" },
+        { "name": "Jest File",        "command": "npx jest {file}",                    "description": "Run tests in a specific file",
+          "parameters": [{ "name": "file", "description": "Test file path (e.g., src/app.test.ts)", "default": "src/app.test.ts" }] },
+        { "name": "Vitest Run",       "command": "npx vitest run",                     "description": "Run Vitest tests once" },
+        { "name": "Vitest Watch",     "command": "npx vitest",                         "description": "Run Vitest in watch mode" },
+        { "name": "Vitest Coverage",  "command": "npx vitest run --coverage",          "description": "Run Vitest with coverage" },
+        { "name": "Cypress Open",     "command": "npx cypress open",                   "description": "Open Cypress test runner GUI" },
+        { "name": "Cypress Run",      "command": "npx cypress run",                    "description": "Run Cypress tests headlessly" },
+        { "name": "Playwright Test",  "command": "npx playwright test",                "description": "Run all Playwright tests" },
+        { "name": "Playwright UI",    "command": "npx playwright test --ui",           "description": "Open Playwright test UI" }
+      ]
+    },
+    {
+      "name": "VS Code Extension Commands",
+      "commands": [
+        { "name": "Package Extension",          "command": "vsce package",                               "description": "Package the extension into a .vsix file" },
+        { "name": "Package Pre-Release",         "command": "vsce package --pre-release",                 "description": "Package as a pre-release .vsix" },
+        { "name": "Package with Version",        "command": "vsce package {version}",                     "description": "Package with a specific version",
+          "parameters": [{ "name": "version", "description": "Version number (e.g., 1.2.3)", "default": "1.0.0", "validate": "semver", "validationMessage": "Version must be in semver format (e.g., 1.2.3)" }] },
+        { "name": "List Packaged Files",         "command": "vsce ls",                                    "description": "List all files included in the .vsix package" },
+        { "name": "Login to Marketplace",        "command": "vsce login {publisher}",                     "description": "Login with your VS Code Marketplace publisher name",
+          "parameters": [{ "name": "publisher", "description": "Your publisher name on VS Code Marketplace", "default": "my-publisher" }] },
+        { "name": "Logout from Marketplace",     "command": "vsce logout {publisher}",                    "description": "Logout from VS Code Marketplace publisher account",
+          "parameters": [{ "name": "publisher", "description": "Publisher name to logout from", "default": "my-publisher" }] },
+        { "name": "Publish to Marketplace",      "command": "vsce publish",                               "description": "Publish the extension to VS Code Marketplace" },
+        { "name": "Publish Patch Version",       "command": "vsce publish patch",                         "description": "Bump patch version and publish" },
+        { "name": "Publish Minor Version",       "command": "vsce publish minor",                         "description": "Bump minor version and publish" },
+        { "name": "Publish Major Version",       "command": "vsce publish major",                         "description": "Bump major version and publish" },
+        { "name": "Publish Pre-Release",         "command": "vsce publish --pre-release",                 "description": "Publish a pre-release version" },
+        { "name": "Publish .vsix File",          "command": "vsce publish --packagePath {vsix}",          "description": "Publish an existing .vsix file",
+          "parameters": [{ "name": "vsix", "description": "Path to the .vsix file", "default": "extension.vsix", "validate": "vsix", "validationMessage": "File must have a .vsix extension" }] },
+        { "name": "Publish to Open VSX",         "command": "npx ovsx publish {vsix} -p {token}",         "description": "Publish to Open VSX registry",
+          "parameters": [
+            { "name": "vsix",  "description": "Path to .vsix file",                  "default": "extension.vsix", "validate": "vsix", "validationMessage": "File must have a .vsix extension" },
+            { "name": "token", "description": "Your Open VSX personal access token", "default": "YOUR_OVSX_TOKEN" }
+          ] },
+        { "name": "Install .vsix Locally",       "command": "code --install-extension {vsix}",            "description": "Install a .vsix file in VS Code locally for testing",
+          "parameters": [{ "name": "vsix", "description": "Path to the .vsix file", "default": "extension.vsix", "validate": "vsix", "validationMessage": "File must have a .vsix extension" }] },
+        { "name": "Package & Install Locally",   "command": "vsce package && code --install-extension *.vsix", "description": "Package and immediately install for testing" }
+      ]
+    },
+    {
+      "name": "Deployment Commands",
+      "commands": [
+        { "name": "Vercel Deploy",   "command": "npx vercel --prod",        "description": "Deploy to Vercel production" },
+        { "name": "Netlify Deploy",  "command": "npx netlify deploy --prod", "description": "Deploy to Netlify production" },
+        { "name": "Firebase Deploy", "command": "firebase deploy",           "description": "Deploy to Firebase" },
+        { "name": "Heroku Deploy",   "command": "git push heroku main",      "description": "Deploy to Heroku" }
+      ]
+    }
+  ]
+}

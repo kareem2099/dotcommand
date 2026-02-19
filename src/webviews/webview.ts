@@ -1,9 +1,11 @@
 import { ExtensionContext, WebviewPanel, window, ViewColumn, Uri, env } from 'vscode';
 import { CommandStorage } from '../storage/storage';
 import { CommandInput } from '../utils/types';
+import { getWebviewDevScript } from '../utils/logger';
 
 interface WebviewMessage {
   command: string;
+  commandText?: string;
   id?: string;
   updates?: Partial<CommandInput>;
 }
@@ -46,7 +48,7 @@ export class CommandWebview {
         this.sendCommands();
         break;
       case 'copyCommand':
-        this.copyCommandToClipboard(message.command);
+        this.copyCommandToClipboard(message.commandText || message.command);
         break;
       case 'deleteCommand':
         if (message.id) {
@@ -197,6 +199,7 @@ export class CommandWebview {
       <!DOCTYPE html>
       <html>
       <head>
+        ${getWebviewDevScript()}
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Saved Commands</title>

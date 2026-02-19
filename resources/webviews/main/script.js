@@ -178,10 +178,10 @@ export class WebviewManager {
     /**
      * Copy command to clipboard
      */
-    copyCommand(command) {
+    copyCommand(commandText) {
         this.vscode.postMessage({
             command: 'copyCommand',
-            command: command
+            commandText: commandText
         });
     }
 
@@ -282,7 +282,7 @@ export class WebviewManager {
             '/': '&#x2F;'
         };
 
-        return text.replace(/[&<>"'\/]/g, (char) => htmlEscapes[char] || char);
+        return text.replace(/[&<>"'/]/g, (char) => htmlEscapes[char] || char);
     }
 
     /**

@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
+import { getWebviewDevScript } from '../utils/logger';
 
 export class UpdatePanel {
   public static currentPanel: UpdatePanel | undefined;
@@ -100,6 +101,7 @@ export class UpdatePanel {
     return `<!DOCTYPE html>
       <html lang="en">
       <head>
+        ${getWebviewDevScript()}
         <meta charset="UTF-8">
         <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self' 'unsafe-inline' vscode-resource: https:; script-src 'self' 'unsafe-inline' vscode-resource: https:; font-src 'self' vscode-resource: https:; img-src 'self' vscode-resource: https: data:; connect-src 'self' vscode-resource: https:;">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">

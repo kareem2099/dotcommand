@@ -17,6 +17,14 @@ import { initializeCommandSuggestions, getCommandSuggestionsManager } from './ut
 // Import the new feature class
 import { SuggestionQuickAccess } from './features/SuggestionQuickAccess';
 import { initializeUpdateService, checkAndShowUpdatePanel } from './services/updateService';
+import { initializeAnalyticsService, getAnalyticsService } from './services/analyticsService';
+import { initializeCustomContextRules } from './utils/customContextRules';
+import { initializeMLSuggestions } from './utils/mlSuggestions';
+import { getPackageJsonParser } from './utils/packageJsonParser';
+import { initializeLogger } from './utils/logger';
+import { runAnalyticsTests } from './tests/analyticsTest'; // Make sure this path matches your file structure
+import { runMLTests } from './tests/mlTest';
+import { runPackageJsonTests } from './tests/packageJsonTest';
 
 let storage: CommandStorage;
 let treeDataProvider: CommandsTreeDataProvider;
@@ -24,7 +32,7 @@ let preparedTreeDataProvider: PreparedCommandsTreeDataProvider;
 let treeView: TreeView<TreeItem>;
 let preparedTreeView: TreeView<TreeItem>;
 
-// Status bar items (Standard ones only - Suggestions handled by class)
+// Status bar items
 let statusBarFavorites: StatusBarItem;
 let statusBarRecent: StatusBarItem;
 let statusBarQuickRun: StatusBarItem;
@@ -33,24 +41,40 @@ let statusBarQuickRun: StatusBarItem;
 let suggestionQuickAccess: SuggestionQuickAccess;
 
 export async function activate(context: ExtensionContext): Promise<void> {
-  console.log('Activating DotCommand...');
+  // ── Logger MUST be first — silences console in production ──────────────
+  initializeLogger(context);
 
+  console.log('Activating DotCommand v1.5.0...');
+
+  // --- 1. Initialize Storage & Providers ---
   storage = new CommandStorage(context);
   treeDataProvider = new CommandsTreeDataProvider(storage);
   preparedTreeDataProvider = new PreparedCommandsTreeDataProvider();
 
-  // Initialize all managers
-  initializeCommandHandlers(storage, treeDataProvider);
-  initializeHistoryHandlers(storage, treeDataProvider);
-  initializeTrashHandlers(storage, treeDataProvider);
-  initializeSearchFilterHandlers(preparedTreeDataProvider, treeDataProvider, preparedTreeView, treeView);
+  // --- 2. Initialize Core Services ---
   initializeTerminalManager(context);
   initializeCommandHistory(context, storage);
   initializeTemplateManager(context, storage);
   initializeCommandSuggestions(storage);
   initializeUpdateService(context);
+  initializeCustomContextRules(context);
+  initializeMLSuggestions(context);
+  
+  // --- 3. Initialize Analytics & Session Tracking ---
+  const analytics = initializeAnalyticsService(context);
+  analytics.trackSessionEvent('extension_activated');
 
-  // Initialize Views
+  // --- 4. Initialize Package Intelligence ---
+  const packageParser = getPackageJsonParser();
+  packageParser.startWatching(context);
+
+  // --- 5. Initialize Handlers ---
+  initializeCommandHandlers(storage, treeDataProvider);
+  initializeHistoryHandlers(storage, treeDataProvider);
+  initializeTrashHandlers(storage, treeDataProvider);
+  initializeSearchFilterHandlers(preparedTreeDataProvider, treeDataProvider, preparedTreeView, treeView);
+
+  // --- 6. Initialize UI Views ---
   treeView = window.createTreeView('dotcommand.commandsView', {
     treeDataProvider: treeDataProvider,
   });
@@ -59,16 +83,56 @@ export async function activate(context: ExtensionContext): Promise<void> {
     treeDataProvider: preparedTreeDataProvider,
   });
 
-  // --- 🔥 Initialize Smart Quick Access ---
+  // --- 7. Initialize Smart Quick Access Feature ---
   suggestionQuickAccess = new SuggestionQuickAccess(context);
 
-  // Register the command linked to the new Class
+  // --- 8. Register Commands ---
+  
+  // Smart Feature Command
   context.subscriptions.push(commands.registerCommand(
     'dotcommand.quickRun', 
     () => suggestionQuickAccess.showQuickPick()
   ));
 
-  // --- Register Standard Commands ---
+  // Developer Testing Command (Disabled by default in production)
+  const config = workspace.getConfiguration('dotcommand');
+  if (config.get<boolean>('testing.enabled', false)) {
+      context.subscriptions.push(commands.registerCommand('dotcommand.runTests', async () => {
+        
+        // Double-check if testing is still enabled before running
+        const config = workspace.getConfiguration('dotcommand');
+        if (!config.get<boolean>('testing.enabled', false)) {
+            window.showWarningMessage('Testing is currently disabled in settings. (dotcommand.testing.enabled) Please enable it and try again.');
+            return;
+        }
+
+        window.showInformationMessage('🧪 Running Analytics Tests...');
+          await runAnalyticsTests(context);
+      }));
+
+      // ML / LLM Tests Command
+      context.subscriptions.push(commands.registerCommand('dotcommand.runMLTests', async () => {
+        const cfg = workspace.getConfiguration('dotcommand');
+        if (!cfg.get<boolean>('testing.enabled', false)) {
+            window.showWarningMessage('Testing is currently disabled in settings. (dotcommand.testing.enabled) Please enable it and try again.');
+            return;
+        }
+        window.showInformationMessage('🤖 Running ML Suggestions Tests...');
+        await runMLTests(context);
+      }));
+
+      // PackageJson Parser Tests Command
+      context.subscriptions.push(commands.registerCommand('dotcommand.runPackageJsonTests', async () => {
+        const cfg = workspace.getConfiguration('dotcommand');
+        if (!cfg.get<boolean>('testing.enabled', false)) {
+            window.showWarningMessage('Testing is currently disabled in settings. (dotcommand.testing.enabled) Please enable it and try again.');
+            return;
+        }
+        await runPackageJsonTests(context);
+      }));
+  }
+
+  // Standard Commands
   context.subscriptions.push(commands.registerCommand('dotcommand.saveCommand', handleSaveCommand));
   context.subscriptions.push(commands.registerCommand('dotcommand.viewCommands', handleViewCommands));
   context.subscriptions.push(commands.registerCommand('dotcommand.refreshCommands', () => treeDataProvider.refresh()));
@@ -112,7 +176,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
     suggestionQuickAccess.updateStatusBar(); 
   }));
 
-  // Setup Standard Status Bars
+  // --- 9. Final Setups ---
   setupStatusBar(context);
 
   // Setup terminal monitoring
@@ -125,13 +189,25 @@ export async function activate(context: ExtensionContext): Promise<void> {
   context.subscriptions.push(treeView);
   context.subscriptions.push(preparedTreeView);
 
-  // Check and show update panel if needed
+  // Check updates
   checkAndShowUpdatePanel(context);
 
   console.log('DotCommand extension is now active!');
 }
 
 export function deactivate(): void {
+  // 1. Cleanup PackageParser
+  try {
+    const packageParser = getPackageJsonParser();
+    packageParser.dispose();
+  } catch (e) { console.error('Error disposing package parser:', e); }
+
+  // 2. Track Deactivation Event
+  try {
+    const analytics = getAnalyticsService();
+    analytics.trackSessionEvent('extension_deactivated');
+  } catch (e) { console.error('Error tracking deactivation:', e); }
+  
   console.log('DotCommand extension is now deactivated!');
 }
 

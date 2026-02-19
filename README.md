@@ -1,4 +1,6 @@
- DotCommand v1.4.0 - Smart Context Awareness Revolution 🧠⚡
+# DotCommand v1.5.0 - Intelligence Foundation & Command Expansion 📊🧠
+
+Intelligent Development Assistant with Analytics & ML-Powered Suggestions
 
 Intelligent Development Assistant with Project Understanding
 
@@ -11,13 +13,16 @@ A revolutionary VS Code extension that understands your project context, suggest
 3. Press `Ctrl+Alt+Space` for instant context-aware suggestions
 4. Enjoy framework-specific templates and native file pickers
 
- 🔥 Why DotCommand v1.4.0?
+ 🔥 Why DotCommand v1.5.0?
 
-- 🧠 **Smart Context Awareness** - Understands your project and suggests relevant commands automatically
-- ⚡ **Framework Intelligence** - Specialized workflows for React, Vue, Angular, TypeScript, Go, Python, Docker, Git
-- 🎯 **Native Integration** - VS Code file pickers, Git branch dropdowns, status bar integration
-- 📱 **Professional Updates** - Automatic "What's New" panels with beautiful changelog rendering
-- 🏗️ **Enterprise Architecture** - Clean TypeScript codebase with comprehensive testing
+- 📊 **Analytics Engine** - Track suggestion clicks, acceptance rates, and response times
+- 🧠 **ML-Based Suggestions** - Weighted scoring using frequency, recency, context, and category
+- 📦 **Package Intelligence** - Smart suggestions from package.json dependencies
+- 🔧 **Custom Context Rules** - Define personal context triggers via JSON
+- 🧪 **Comprehensive Testing** - 37+ tests for all features
+- 🌍 **Extended Detection** - 15+ new technologies (Flutter, Gradle, Maven, Terraform, etc.)
+- 📚 **180+ Commands** - 20 categories including Rust, Go, pnpm, Terraform, AWS, Flutter
+- 🔒 **Production Ready** - Clean console output in production builds
 
 ## 🚀 v1.4.0 Smart Context Awareness Revolution
 
@@ -156,10 +161,80 @@ DotCommand v1.4.0 transforms from a command manager into an **intelligent develo
 
 ### 📈 Impact Metrics
 
-- **18/18 tasks completed** - 100% success rate for major release
-- **23 total tasks** across infrastructure, templates, UI, and advanced features
-- **13+ technologies** automatically detected and supported
-- **Enterprise-grade codebase** with maintainable, scalable architecture
+- **19/19 tasks completed** - 100% success rate for v1.5.0
+- **37+ tests** across Analytics, ML, and PackageJson modules
+- **20 command categories** with 180+ prepared commands
+- **15+ technologies** automatically detected and supported
+
+## 🧪 v1.5.0 Test Suites
+
+Run tests from Command Palette:
+- `dotcommand.runTests` - Analytics Test Suite
+- `dotcommand.runMLTests` - ML Suggestions Test Suite  
+- `dotcommand.runPackageJsonTests` - PackageJson Parser Test Suite (37 tests)
+
+### 📊 Analytics Test Suite
+- Session tracking (start, duration, events)
+- Suggestion analytics (clicks, dismissals, acceptance rates)
+- Command success rate tracking
+- Context accuracy measurement
+
+### 🧠 ML Suggestions Test Suite
+- Frequency-based scoring
+- Recency-based scoring
+- Category preference scoring
+- Context matching scoring
+
+### 📦 PackageJson Parser Test Suite (37 tests)
+1. Package Manager Detection (7) - pnpm > yarn > bun > npm priority
+2. PackageJsonInfo Structure (2)
+3. hasPackage() (3)
+4. getPackageType() (3)
+5. getAllDependencies() (3)
+6. getScripts() (2)
+7. Smart Suggestions (11) - react→react-dom, eslint→prettier, etc.
+8. Relevance Sort (4) - exact > starts-with > alphabetical
+9. Singleton Pattern (1)
+10. Cache Invalidation (2)
+
+## 📦 Package Intelligence
+
+DotCommand parses your `package.json` and provides smart suggestions:
+- **Missing companion packages**: react → react-dom, @types/react
+- **Development tools**: eslint → prettier, jest → @types/jest
+- **Type definitions**: typescript → @types/node, axios → @types/axios
+- **Package manager detection**: Auto-detects pnpm/yarn/bun/npm
+
+## 🌍 Extended Technology Detection (15+ new)
+
+DotCommand now detects:
+- **Mobile**: Flutter, Dart
+- **Build Tools**: Gradle, Maven, CMake, Make
+- **Cloud**: Terraform, AWS CLI
+- **Languages**: Rust (cargo), Go, C#
+- **Package Managers**: pnpm, Yarn
+- **Frameworks**: Next.js, Nuxt.js, Svelte, Electron
+
+## 📚 Command Categories (20 Categories, 180+ Commands)
+
+| Category | Icon | Examples |
+|----------|------|----------|
+| 🚀 Git | branch | checkout, commit, push, merge |
+| 📦 npm | package | install, run, test, build |
+| 🐳 Docker | container | build, run, compose, logs |
+| ☸️ Kubernetes | cloud | apply, get pods, scale |
+| 🦀 Rust | debug-start | cargo build, run, test |
+| 🐹 Go | arrow-right | go build, run, test |
+| 📦 pnpm | package | install, add, remove |
+| 🏗️ Terraform | cloud | init, plan, apply |
+| ☁️ AWS | cloud | s3 cp, ec2 ls, lambda invoke |
+| 📱 Flutter | device-mobile | run, build, pub get |
+| 🏗️ Gradle/Maven | tools | build, test, clean |
+| 🔐 SSH/Remote | remote | ssh, scp, rsync |
+| ⚛️ VS Code | extensions | vsce package, publish |
+| 🐧 Linux | terminal | cp, mv, grep, find |
+| 🐍 Python | terminal | pip, pytest, venv |
+| + More | ... | Full development workflows |
 
  ⭐ 5 Levels of Command Access
 

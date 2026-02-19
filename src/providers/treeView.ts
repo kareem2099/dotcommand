@@ -207,47 +207,74 @@ export class CommandsTreeDataProvider implements TreeDataProvider<TreeItem> {
 
       // Create category icons mapping
       const categoryIcons: { [key: string]: ThemeIcon } = {
-        'Git Commands': new ThemeIcon('git-branch'),
-        'NPM Commands': new ThemeIcon('package'),
-        'Yarn Commands': new ThemeIcon('package'),
-        'Python Commands': new ThemeIcon('code'),
-        'Docker Commands': new ThemeIcon('vm'),
-        'Kubernetes Commands': new ThemeIcon('server-process'),
-        'Linux Commands': new ThemeIcon('terminal'),
-        'Database Commands': new ThemeIcon('database'),
-        'Code Quality Commands': new ThemeIcon('checklist'),
-        'Testing Commands': new ThemeIcon('beaker'),
-        'Deployment Commands': new ThemeIcon('rocket')
+        'Git Commands':              new ThemeIcon('git-branch'),
+        'NPM Commands':              new ThemeIcon('package'),
+        'Yarn Commands':             new ThemeIcon('package'),
+        'pnpm Commands':             new ThemeIcon('package'),
+        'Python Commands':           new ThemeIcon('code'),
+        'Rust Commands':             new ThemeIcon('debug-start'),
+        'Go Commands':               new ThemeIcon('arrow-right'),
+        'Docker Commands':           new ThemeIcon('vm'),
+        'Kubernetes Commands':       new ThemeIcon('server-process'),
+        'Linux Commands':            new ThemeIcon('terminal'),
+        'Database Commands':         new ThemeIcon('database'),
+        'Terraform Commands':        new ThemeIcon('cloud'),
+        'AWS Commands':              new ThemeIcon('cloud'),
+        'Flutter Commands':          new ThemeIcon('device-mobile'),
+        'Gradle & Maven Commands':   new ThemeIcon('tools'),
+        'SSH & Remote Commands':     new ThemeIcon('remote'),
+        'Code Quality Commands':     new ThemeIcon('checklist'),
+        'Testing Commands':          new ThemeIcon('beaker'),
+        'Deployment Commands':       new ThemeIcon('rocket'),
+        'VS Code Extension Commands': new ThemeIcon('extensions')
       };
 
       // Create tooltips mapping
       const categoryTooltips: { [key: string]: string } = {
-        'Git Commands': 'Essential Git commands for version control',
-        'NPM Commands': 'Common NPM package management commands',
-        'Yarn Commands': 'Yarn package manager commands',
-        'Python Commands': 'Python development and pip commands',
-        'Docker Commands': 'Docker container management commands',
-        'Kubernetes Commands': 'Kubernetes orchestration commands',
-        'Linux Commands': 'Essential Linux system commands',
-        'Database Commands': 'Database connection and management commands',
-        'Code Quality Commands': 'Linting and code formatting tools',
-        'Testing Commands': 'Testing framework commands',
-        'Deployment Commands': 'Deployment and hosting platform commands'
+        'Git Commands':              'Essential Git commands for version control',
+        'NPM Commands':              'Common NPM package management commands',
+        'Yarn Commands':             'Yarn package manager commands',
+        'pnpm Commands':             'pnpm fast package manager commands',
+        'Python Commands':           'Python development and pip commands',
+        'Rust Commands':             'Rust/Cargo build and package management',
+        'Go Commands':               'Go build, test, and module commands',
+        'Docker Commands':           'Docker container management commands',
+        'Kubernetes Commands':       'Kubernetes orchestration commands',
+        'Linux Commands':            'Essential Linux system commands',
+        'Database Commands':         'Database connection and management commands',
+        'Terraform Commands':        'Terraform infrastructure-as-code commands',
+        'AWS Commands':              'AWS CLI cloud management commands',
+        'Flutter Commands':          'Flutter/Dart mobile and web app commands',
+        'Gradle & Maven Commands':   'Java build tools: Gradle and Maven',
+        'SSH & Remote Commands':     'SSH connections, SCP file transfer, and rsync',
+        'Code Quality Commands':     'Linting and code formatting tools',
+        'Testing Commands':          'Testing framework commands',
+        'Deployment Commands':       'Deployment and hosting platform commands',
+        'VS Code Extension Commands': 'Publish & manage VS Code extensions (vsce / Open VSX)'
       };
 
       // Create emoji prefixes mapping
       const categoryEmojis: { [key: string]: string } = {
-        'Git Commands': '🚀',
-        'NPM Commands': '📦',
-        'Yarn Commands': '🧶',
-        'Python Commands': '🐍',
-        'Docker Commands': '🐳',
-        'Kubernetes Commands': '☸️',
-        'Linux Commands': '🐧',
-        'Database Commands': '🗄️',
-        'Code Quality Commands': '✨',
-        'Testing Commands': '🧪',
-        'Deployment Commands': '🚀'
+        'Git Commands':              '🚀',
+        'NPM Commands':              '📦',
+        'Yarn Commands':             '🧶',
+        'pnpm Commands':             '📦',
+        'Python Commands':           '🐍',
+        'Rust Commands':             '🦀',
+        'Go Commands':               '🐹',
+        'Docker Commands':           '🐳',
+        'Kubernetes Commands':       '☸️',
+        'Linux Commands':            '🐧',
+        'Database Commands':         '🗄️',
+        'Terraform Commands':        '🏗️',
+        'AWS Commands':              '☁️',
+        'Flutter Commands':          '📱',
+        'Gradle & Maven Commands':   '🏗️',
+        'SSH & Remote Commands':     '🔐',
+        'Code Quality Commands':     '✨',
+        'Testing Commands':          '🧪',
+        'Deployment Commands':       '🚀',
+        'VS Code Extension Commands': '🧩'
       };
 
       for (const category of categories) {
@@ -477,14 +504,22 @@ export class CommandsTreeDataProvider implements TreeDataProvider<TreeItem> {
       };
       // Set appropriate icon based on category
       const cat = categoryName.toLowerCase();
-      if (cat.includes('git')) item.iconPath = new ThemeIcon('git-branch');
-      else if (cat.includes('npm') || cat.includes('yarn')) item.iconPath = new ThemeIcon('package');
-      else if (cat.includes('docker')) item.iconPath = new ThemeIcon('vm');
-      else if (cat.includes('python')) item.iconPath = new ThemeIcon('code');
-      else if (cat.includes('database')) item.iconPath = new ThemeIcon('database');
-      else if (cat.includes('test')) item.iconPath = new ThemeIcon('beaker');
-      else if (cat.includes('deploy')) item.iconPath = new ThemeIcon('rocket');
-      else if (cat.includes('linux')) item.iconPath = new ThemeIcon('terminal');
+      if      (cat.includes('git'))                              item.iconPath = new ThemeIcon('git-branch');
+      else if (cat.includes('npm') || cat.includes('yarn') || cat.includes('pnpm')) item.iconPath = new ThemeIcon('package');
+      else if (cat.includes('docker'))                           item.iconPath = new ThemeIcon('vm');
+      else if (cat.includes('kubernetes') || cat.includes('k8s')) item.iconPath = new ThemeIcon('server-process');
+      else if (cat.includes('rust'))                             item.iconPath = new ThemeIcon('debug-start');
+      else if (cat.includes('go'))                               item.iconPath = new ThemeIcon('arrow-right');
+      else if (cat.includes('python'))                           item.iconPath = new ThemeIcon('code');
+      else if (cat.includes('flutter') || cat.includes('dart')) item.iconPath = new ThemeIcon('device-mobile');
+      else if (cat.includes('gradle') || cat.includes('maven')) item.iconPath = new ThemeIcon('tools');
+      else if (cat.includes('ssh') || cat.includes('remote'))   item.iconPath = new ThemeIcon('remote');
+      else if (cat.includes('terraform') || cat.includes('aws') || cat.includes('cloud')) item.iconPath = new ThemeIcon('cloud');
+      else if (cat.includes('database'))                         item.iconPath = new ThemeIcon('database');
+      else if (cat.includes('test'))                             item.iconPath = new ThemeIcon('beaker');
+      else if (cat.includes('deploy'))                           item.iconPath = new ThemeIcon('rocket');
+      else if (cat.includes('linux'))                            item.iconPath = new ThemeIcon('terminal');
+      else if (cat.includes('vscode') || cat.includes('extension')) item.iconPath = new ThemeIcon('extensions');
       else item.iconPath = new ThemeIcon('terminal');
 
       return item;
@@ -683,9 +718,15 @@ export class CommandsTreeDataProvider implements TreeDataProvider<TreeItem> {
       if (category.includes('aws') || category.includes('azure') || category.includes('gcp')) {
         return new ThemeIcon('cloud');
       }
+      if (category.includes('vscode') || category.includes('vscode-extension') || category.includes('extension')) {
+        return new ThemeIcon('extensions');
+      }
     }
 
     // Command-based detection
+    if (cmd.startsWith('vsce ') || cmd.startsWith('ovsx ') || cmd.startsWith('npx ovsx ') || cmd.startsWith('npx vsce ')) {
+      return new ThemeIcon('extensions');
+    }
     if (cmd.startsWith('npm ') || cmd.startsWith('yarn ') || cmd.startsWith('pnpm ')) {
       return new ThemeIcon('package');
     }
@@ -698,8 +739,23 @@ export class CommandsTreeDataProvider implements TreeDataProvider<TreeItem> {
     if (cmd.startsWith('kubectl ') || cmd.startsWith('helm ')) {
       return new ThemeIcon('server-process');
     }
-    if (cmd.includes('aws ') || cmd.includes('terraform')) {
+    if (cmd.includes('aws ') || cmd.startsWith('terraform ')) {
       return new ThemeIcon('cloud');
+    }
+    if (cmd.startsWith('cargo ')) {
+      return new ThemeIcon('debug-start');
+    }
+    if (cmd.startsWith('go build') || cmd.startsWith('go run') || cmd.startsWith('go test') || cmd.startsWith('go mod') || cmd.startsWith('gofmt')) {
+      return new ThemeIcon('arrow-right');
+    }
+    if (cmd.startsWith('flutter ') || cmd.startsWith('dart ')) {
+      return new ThemeIcon('device-mobile');
+    }
+    if (cmd.startsWith('./gradlew ') || cmd.startsWith('gradle ') || cmd.startsWith('mvn ')) {
+      return new ThemeIcon('tools');
+    }
+    if (cmd.startsWith('ssh ') || cmd.startsWith('ssh-keygen') || cmd.startsWith('scp ') || cmd.startsWith('rsync ') || cmd.startsWith('ssh-copy-id')) {
+      return new ThemeIcon('remote');
     }
 
     // Default to terminal icon
@@ -854,6 +910,31 @@ export class CommandsTreeDataProvider implements TreeDataProvider<TreeItem> {
     // Go
     if (cat.includes('go')) {
       return new ThemeIcon('arrow-right');
+    }
+
+    // VS Code Extension (vsce / ovsx)
+    if (cat.includes('vscode') || cat.includes('vscode-extension') || cat.includes('extension')) {
+      return new ThemeIcon('extensions');
+    }
+
+    // Flutter / Dart
+    if (cat.includes('flutter') || cat.includes('dart')) {
+      return new ThemeIcon('device-mobile');
+    }
+
+    // Gradle / Maven (Java build tools)
+    if (cat.includes('gradle') || cat.includes('maven') || cat.includes('gradlew') || cat.includes('mvn')) {
+      return new ThemeIcon('tools');
+    }
+
+    // SSH / Remote
+    if (cat.includes('ssh') || cat.includes('remote') || cat.includes('scp') || cat.includes('rsync')) {
+      return new ThemeIcon('remote');
+    }
+
+    // Terraform
+    if (cat.includes('terraform')) {
+      return new ThemeIcon('cloud');
     }
 
     // Default folder icon

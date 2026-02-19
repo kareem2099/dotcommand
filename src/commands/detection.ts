@@ -63,6 +63,26 @@ export function detectCommandCategory(command: string): string | undefined {
     return 'go';
   }
 
+  // VS Code Extension publishing tools (vsce / ovsx) — MUST be before Linux
+  if (command.match(/\b(vsce|ovsx)\b/)) {
+    return 'vscode-extension';
+  }
+
+  // Flutter / Dart commands
+  if (command.match(/\b(flutter|dart)\b/)) {
+    return 'flutter';
+  }
+
+  // Gradle / Maven (Java build tools) — before Linux so ./gradlew isn't swallowed
+  if (command.match(/\b(gradlew|gradle|mvn|maven)\b/)) {
+    return 'gradle-maven';
+  }
+
+  // SSH / Remote commands — before Linux (Linux also catches ssh, scp, rsync)
+  if (command.match(/\b(ssh|scp|rsync|ssh-keygen|ssh-copy-id)\b/)) {
+    return 'ssh-remote';
+  }
+
   // Linux system commands - all Linux commands in one category
   if (command.match(/\b(cd|ls|pwd|mkdir|rmdir|touch|cp|mv|rm|ln|chmod|chown|chgrp|find|grep|sed|awk|sort|uniq|wc|cat|more|less|head|tail|nano|vim|vi|emacs|ssh|scp|rsync|tar|gzip|bzip2|xz|zip|mount|umount|df|du|ps|kill|top|htop|netstat|ss|ping|curl|wget|hostname|uname|free|uptime|whoami|id|groups|useradd|usermod|userdel|groupadd|sudo|su|apt|yum|brew|pacman)\b/)) {
     return 'linux';

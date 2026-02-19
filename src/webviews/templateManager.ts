@@ -1,5 +1,6 @@
 import { WebviewPanel, window, ViewColumn, ExtensionContext, Uri } from 'vscode';
 import { getTemplateManager } from '../utils/commandTemplates';
+import { getWebviewDevScript } from '../utils/logger';
 
 export class TemplateManagerWebview {
     private static instance: TemplateManagerWebview;
@@ -66,6 +67,7 @@ export class TemplateManagerWebview {
         return `<!DOCTYPE html>
             <html lang="en">
             <head>
+                ${getWebviewDevScript(nonce)}
                 <meta charset="UTF-8">
                 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">

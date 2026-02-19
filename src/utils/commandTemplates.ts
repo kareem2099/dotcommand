@@ -130,15 +130,39 @@ export class ContextDetector {
    */
   private isImportantFile(path: string): boolean {
     const importantFiles = [
+      // Node / JS
       'package.json',
-      'Dockerfile',
-      'docker-compose.yml',
+      'package-lock.json',
+      'yarn.lock',
+      'pnpm-lock.yaml',
+      // Python
       'requirements.txt',
       'pyproject.toml',
+      'setup.py',
+      'Pipfile',
+      // Rust
       'Cargo.toml',
+      // Go
       'go.mod',
+      // Flutter / Dart
+      'pubspec.yaml',
+      // Java build tools
+      'build.gradle',
+      'build.gradle.kts',
+      'pom.xml',
+      'settings.gradle',
+      // CMake / Make
+      'CMakeLists.txt',
+      'Makefile',
+      // Docker
+      'Dockerfile',
+      'docker-compose.yml',
+      'docker-compose.yaml',
+      // Git
       '.git/config',
+      // PHP
       'composer.json',
+      // .NET
       'angular.json',
       'tsconfig.json'
     ];
@@ -146,8 +170,8 @@ export class ContextDetector {
     return importantFiles.includes(path) ||
            path.endsWith('.csproj') ||
            path.endsWith('.fsproj') ||
-           path.includes('package-lock.json') ||
-           path.includes('yarn.lock');
+           path.endsWith('.sln') ||
+           path.endsWith('.tf');  // Terraform files
   }
 
   /**
@@ -156,46 +180,99 @@ export class ContextDetector {
   detectTechnologies(): string[] {
     const technologies: string[] = [];
 
+    // Node / JavaScript
     if (this.fileExists('package.json')) {
       technologies.push('nodejs', 'npm');
+
+      // Detect package manager variant
+      if (this.fileExists('yarn.lock'))       technologies.push('yarn');
+      if (this.fileExists('pnpm-lock.yaml'))  technologies.push('pnpm');
+
       const packageJson = this.fileContents.get('package.json');
       if (packageJson) {
-        if (packageJson.includes('"react"')) technologies.push('react');
-        if (packageJson.includes('"vue"')) technologies.push('vue');
-        if (packageJson.includes('"angular')) technologies.push('angular');
+        if (packageJson.includes('"react"'))      technologies.push('react');
+        if (packageJson.includes('"vue"'))        technologies.push('vue');
+        if (packageJson.includes('"angular'))     technologies.push('angular');
         if (packageJson.includes('"typescript"')) technologies.push('typescript');
+        if (packageJson.includes('"next"'))       technologies.push('nextjs');
+        if (packageJson.includes('"nuxt"'))       technologies.push('nuxtjs');
+        if (packageJson.includes('"svelte"'))     technologies.push('svelte');
+        if (packageJson.includes('"electron"'))   technologies.push('electron');
       }
     }
 
-    if (this.fileExists('Dockerfile') || this.fileExists('docker-compose.yml')) {
+    // Docker
+    if (this.fileExists('Dockerfile') ||
+        this.fileExists('docker-compose.yml') ||
+        this.fileExists('docker-compose.yaml')) {
       technologies.push('docker');
     }
 
-    if (this.fileExists('.git') || this.directoryExists('.git')) {
+    // Git
+    if (this.fileExists('.git/config') || this.directoryExists('.git')) {
       technologies.push('git');
     }
 
-    if (this.fileExists('requirements.txt') || this.fileExists('pyproject.toml')) {
+    // Python
+    if (this.fileExists('requirements.txt') ||
+        this.fileExists('pyproject.toml') ||
+        this.fileExists('setup.py') ||
+        this.fileExists('Pipfile')) {
       technologies.push('python');
     }
 
+    // Go
     if (this.fileExists('go.mod')) {
       technologies.push('go');
     }
 
+    // Rust
     if (this.fileExists('Cargo.toml')) {
       technologies.push('rust');
     }
 
+    // Flutter / Dart
+    if (this.fileExists('pubspec.yaml')) {
+      technologies.push('flutter', 'dart');
+    }
+
+    // Java — Gradle
+    if (this.fileExists('build.gradle') || this.fileExists('build.gradle.kts')) {
+      technologies.push('gradle', 'java');
+    }
+
+    // Java — Maven
+    if (this.fileExists('pom.xml')) {
+      technologies.push('maven', 'java');
+    }
+
+    // CMake
+    if (this.fileExists('CMakeLists.txt')) {
+      technologies.push('cmake', 'cpp');
+    }
+
+    // Make
+    if (this.fileExists('Makefile')) {
+      technologies.push('make');
+    }
+
+    // Terraform
+    if (this.workspaceFiles.some(f => f.endsWith('.tf'))) {
+      technologies.push('terraform');
+    }
+
+    // PHP
     if (this.fileExists('composer.json')) {
       technologies.push('php');
     }
 
-    if (this.workspaceFiles.some(f => f.endsWith('.csproj') || f.endsWith('.fsproj'))) {
-      technologies.push('dotnet');
+    // .NET
+    if (this.workspaceFiles.some(f => f.endsWith('.csproj') || f.endsWith('.fsproj') || f.endsWith('.sln'))) {
+      technologies.push('dotnet', 'csharp');
     }
 
-    return technologies;
+    // Remove duplicates and return
+    return [...new Set(technologies)];
   }
 
   /**

@@ -3,7 +3,7 @@
   "displayName": "DotCommand - Command Manager",
   "publisher": "freerave",
   "description": "Save, view, copy, and manage your frequently used commands in VS Code",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "icon": "assets/icons/icon.png",
   "keywords": [
     "commands",
@@ -19,7 +19,7 @@
     "context-aware"
   ],
   "engines": {
-    "vscode": "^1.80.0"
+    "vscode": "^1.90.0"
   },
   "categories": [
     "Other"
@@ -63,7 +63,7 @@
         },
         "dotcommand.testing.enabled": {
           "type": "boolean",
-          "default": true,
+          "default": false,
           "description": "Enable command testing/validation features"
         },
         "dotcommand.testing.showSimulatedOutput": {
@@ -178,6 +178,78 @@
           "type": "boolean",
           "default": true,
           "description": "Show the top suggested command in the Status Bar"
+        },
+        "dotcommand.ml.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable ML-based smart suggestions"
+        },
+        "dotcommand.ml.frequencyWeight": {
+          "type": "number",
+          "default": 0.3,
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Weight for usage frequency in ML scoring (0-1)"
+        },
+        "dotcommand.ml.recencyWeight": {
+          "type": "number",
+          "default": 0.3,
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Weight for recency in ML scoring (0-1)"
+        },
+        "dotcommand.ml.categoryWeight": {
+          "type": "number",
+          "default": 0.2,
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Weight for category preference in ML scoring (0-1)"
+        },
+        "dotcommand.ml.contextWeight": {
+          "type": "number",
+          "default": 0.1,
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Weight for context match in ML scoring (0-1)"
+        },
+        "dotcommand.ml.analyticsWeight": {
+          "type": "number",
+          "default": 0.1,
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Weight for analytics data in ML scoring (0-1)"
+        },
+        "dotcommand.analytics.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable analytics tracking (stored locally)"
+        },
+        "dotcommand.analytics.retentionDays": {
+          "type": "number",
+          "default": 90,
+          "minimum": 7,
+          "maximum": 365,
+          "description": "Number of days to retain analytics data"
+        },
+        "dotcommand.customRules.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable custom context rules"
+        },
+        "dotcommand.packageIntelligence.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable package.json-based smart suggestions"
+        },
+        "dotcommand.packageIntelligence.autoDetectPackageManager": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically detect package manager (npm/yarn/pnpm/bun)"
+        },
+        "dotcommand.packageIntelligence.showSmartSuggestions": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show smart package suggestions based on dependencies"
         }
       }
     },
@@ -367,6 +439,24 @@
         "title": "Smart Quick Run (Suggested)",
         "category": "DotCommand",
         "icon": "$(zap)"
+      },
+      {
+        "command": "dotcommand.runTests",
+        "title": "Run Analytics Tests",
+        "category": "DotCommand",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "dotcommand.runMLTests",
+        "title": "Run ML Suggestions Tests",
+        "category": "DotCommand",
+        "icon": "$(hubot)"
+      },
+      {
+        "command": "dotcommand.runPackageJsonTests",
+        "title": "Run PackageJson Parser Tests",
+        "category": "DotCommand",
+        "icon": "$(package)"
       }
     ],
     "keybindings": [
@@ -653,12 +743,12 @@
     "lint": "eslint src --ext ts"
   },
   "devDependencies": {
-    "@types/node": "16.x",
-    "@types/vscode": "^1.80.0",
-    "@typescript-eslint/eslint-plugin": "^8.46.2",
-    "@typescript-eslint/parser": "^8.46.2",
-    "eslint": "^8.0.0",
-    "typescript": "^4.0.0"
+    "@types/node": "20.0.0",
+    "@types/vscode": "^1.90.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "typescript": "^5.4.0"
   },
   "repository": {
     "type": "git",

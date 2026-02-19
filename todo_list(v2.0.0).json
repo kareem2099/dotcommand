@@ -1,0 +1,133 @@
+{
+  "project": "DotCommand v2.0.0 - Visual Experience Overhaul",
+  "start_date": "2026-03-01",
+  "version": "2.0.0",
+  "description": "Major visual overhaul with analytics dashboard, visual rule builder, and enhanced UI/UX based on v1.5.0 data",
+  "release_focus": "Visual Experience & Data Visualization",
+  "prerequisites": {
+    "requires_v1_5_0": "Builds upon analytics data collected in v1.5.0",
+    "data_needed": "User usage patterns, suggestion acceptance rates, performance metrics"
+  },
+  "tasks": [
+    {
+      "id": "analytics_dashboard",
+      "description": "Advanced Analytics Dashboard Webview with charts and statistics",
+      "status": "pending",
+      "details": "Build webview dashboard with charts showing suggestion acceptance rates, popular templates, performance metrics, and user behavior insights",
+      "features": [
+        "Usage statistics charts (bar, line, pie)",
+        "Template popularity rankings",
+        "Suggestion acceptance rate trends",
+        "Response time performance graphs",
+        "User category preferences visualization",
+        "Export data functionality"
+      ]
+    },
+    {
+      "id": "rule_builder_ui",
+      "description": "Visual Rule Builder UI for creating custom context rules",
+      "status": "pending",
+      "details": "User-friendly visual interface for defining custom triggers without JSON",
+      "features": [
+        "Drag-and-drop rule creation",
+        "File pattern visual picker",
+        "Directory tree selector",
+        "Real-time rule preview",
+        "Rule testing interface",
+        "Import/export rules"
+      ]
+    },
+    {
+      "id": "responsive_design",
+      "description": "Enhanced Responsive Design for all screen sizes",
+      "status": "pending",
+      "details": "Optimize UI for various VS Code window sizes and layouts",
+      "features": [
+        "Dynamic grid layouts",
+        "Collapsible panels",
+        "Mobile-friendly components",
+        "Touch support considerations",
+        "Adaptive sidebar"
+      ]
+    },
+    {
+      "id": "ui_theme_customization",
+      "description": "Theme customization and dark/light mode enhancements",
+      "status": "pending",
+      "details": "Allow users to customize colors and themes beyond VS Code defaults",
+      "features": [
+        "Custom accent colors",
+        "Icon pack selection",
+        "Density options (compact/comfortable)",
+        "Custom CSS injection"
+      ]
+    },
+    {
+      "id": "command_palette_plus",
+      "description": "Enhanced Command Palette with AI-powered search",
+      "status": "pending",
+      "details": "Upgrade the quick command picker with smarter search",
+      "features": [
+        "Fuzzy search improvements",
+        "AI-powered ranking",
+        "Recent + suggested hybrid view",
+        "Keyboard navigation improvements",
+        "Category filtering"
+      ]
+    }
+  ],
+  "summary": {
+    "total_tasks": 5,
+    "completed_tasks": 0,
+    "pending_tasks": 5,
+    "progress_percentage": "0%",
+    "breaking_changes": [
+      "New dashboard requires v1.5.0 data",
+      "Rule format may change from JSON to new schema"
+    ],
+    "key_achievements_v150": [
+      "Analytics engine with event tracking",
+      "Package.json dependency suggestions",
+      "Custom context rules (JSON)",
+      "Performance monitoring",
+      "ML-based suggestions"
+    ],
+    "v200_milestones": [
+      "Analytics Dashboard with visualizations",
+      "Visual Rule Builder",
+      "Responsive UI overhaul",
+      "Theme customization",
+      "Enhanced command palette"
+    ],
+    "expected_impact": {
+      "user_insights": "Complete visibility into usage patterns",
+      "customization": "Full control over rules and appearance",
+      "accessibility": "Works on all screen sizes",
+      "engagement": "Deeper platform integration"
+    }
+  },
+  "technical_requirements": {
+    "dashboard": {
+      "library": "Chart.js or similar for visualizations",
+      "data_source": "globalState analytics from v1.5.0",
+      "features": ["interactive charts", "date range selection", "export CSV/PDF"]
+    },
+    "rule_builder": {
+      "framework": "Webview with React-like state management",
+      "components": ["pattern picker", "tree view", "test console"],
+      "export_format": "JSON (backward compatible with v1.5.0)"
+    },
+    "responsive": {
+      "breakpoints": ["320px", "768px", "1024px", "1440px"],
+      "approach": "CSS Grid + Flexbox with min() max() clamp()"
+    }
+  },
+  "marketing_message": "The Visual Experience Overhaul - See your data, build custom rules, love the interface",
+  "version_highlights": [
+    "📊 Analytics Dashboard - Your usage data, beautifully visualized",
+    "🎨 Visual Rule Builder - Create rules without touching JSON",
+    "📱 Responsive Design - Works perfectly on any screen size",
+    "🎭 Theme Customization - Make it truly yours",
+    "⚡ Enhanced Command Palette - Smarter, faster, better"
+  ]
+}
